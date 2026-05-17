@@ -40,60 +40,74 @@ export default function Home() {
   const [error, setError] = useState("");
   const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
 
-async function scanWebsite() {
-  setLoading(true);
-  setError("");
+  async function scanWebsite() {
+    setLoading(true);
+    setError("");
 
-  try {
-    const response = await fetch("http://127.0.0.1:8000/scan-url", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ url }),
-    });
+    try {
+      const response = await fetch("http://127.0.0.1:8000/scan-url", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url }),
+      });
 
-    if (!response.ok) {
-      throw new Error("Backend scan failed");
+      if (!response.ok) {
+        throw new Error("Backend scan failed");
+      }
+
+      const data = await response.json();
+
+      setResult(data);
+
+      setScanHistory((previous) => [
+        {
+          domain: data.domain,
+          threat: data.threat_level,
+          time: new Date().toLocaleTimeString(),
+        },
+        ...previous,
+      ]);
+    } catch {
+      setError("Scan failed. The site may be offline, invalid, or blocked.");
+    } finally {
+      setLoading(false);
     }
-
-    const data = await response.json();
-
-    setResult(data);
-
-    setScanHistory((previous) => [
-      {
-        domain: data.domain,
-        threat: data.threat_level,
-        time: new Date().toLocaleTimeString(),
-      },
-      ...previous,
-    ]);
-  } catch {
-    setError("Scan failed. The site may be offline, invalid, or blocked.");
-  } finally {
-    setLoading(false);
   }
-}
 
   const threatStyle =
-  result?.risk_score && result.risk_score >= 70
-    ? {
-        text: "text-red-400",
-        border: "border-red-500/30",
-        bg: "bg-red-500/10",
-      }
-    : result?.risk_score && result.risk_score >= 30
-    ? {
-        text: "text-yellow-300",
-        border: "border-yellow-500/30",
-        bg: "bg-yellow-500/10",
-      }
-    : {
-        text: "text-green-400",
-        border: "border-green-500/30",
-        bg: "bg-green-500/10",
-      };
+    result?.risk_score && result.risk_score >= 70
+      ? {
+          text: "text-red-400",
+          border: "border-red-500/30",
+          bg: "bg-red-500/10",
+        }
+      : result?.risk_score && result.risk_score >= 30
+      ? {
+          text: "text-yellow-300",
+          border: "border-yellow-500/30",
+          bg: "bg-yellow-500/10",
+        }
+      : {
+          text: "text-green-400",
+          border: "border-green-500/30",
+          bg: "bg-green-500/10",
+        };
+
+  function buildSecuritySummary() {
+    if (!result) return "";
+
+    if (result.threat_level === "HIGH") {
+      return "This domain shows multiple dangerous indicators including suspicious keywords, redirects, or phishing behavior. Avoid entering sensitive information.";
+    }
+
+    if (result.threat_level === "MEDIUM") {
+      return "This website contains suspicious characteristics. Review scripts, redirects, and domain structure before trusting it.";
+    }
+
+    return "This website appears relatively safe based on the current scan analysis. No major high-risk indicators were detected.";
+  }
 
   return (
     <main className="min-h-screen bg-[#050816] text-white p-8">
@@ -141,23 +155,28 @@ async function scanWebsite() {
                   "Scan"
                 )}
               </button>
-              {error && (
-                <div className="mt-4 rounded-xl border border-red-500/30 bg-black p-4 text-red-400">
-                  {error}
-                </div>
-              )}
             </div>
+
+            {error && (
+              <div className="mt-4 rounded-xl border border-red-500/30 bg-black p-4 text-red-400">
+                {error}
+              </div>
+            )}
 
             {result && (
               <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className={`rounded-xl border ${threatStyle.border} ${threatStyle.bg} p-4`}>
+                <div
+                  className={`rounded-xl border ${threatStyle.border} ${threatStyle.bg} p-4`}
+                >
                   <p className="text-sm text-gray-400">Risk Score</p>
                   <p className={`mt-2 text-3xl font-bold ${threatStyle.text}`}>
                     {result.risk_score}/100
                   </p>
                 </div>
 
-                <div className={`rounded-xl border ${threatStyle.border} ${threatStyle.bg} p-4`}>
+                <div
+                  className={`rounded-xl border ${threatStyle.border} ${threatStyle.bg} p-4`}
+                >
                   <p className="text-sm text-gray-400">Threat Level</p>
 
                   <div className="mt-2 flex items-center gap-2">
@@ -198,6 +217,18 @@ async function scanWebsite() {
                     <li key={index}>• {reason}</li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {result && (
+              <div className="mt-6 rounded-xl border border-purple-500/20 bg-purple-500/5 p-5">
+                <h3 className="font-bold text-purple-300">
+                  AI Security Analysis
+                </h3>
+
+                <p className="mt-3 text-gray-300 leading-7">
+                  {buildSecuritySummary()}
+                </p>
               </div>
             )}
           </div>
