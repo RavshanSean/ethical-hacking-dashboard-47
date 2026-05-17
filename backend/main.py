@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from urllib.parse import urlparse
 import whois
+import requests
+from bs4 import BeautifulSoup
 
 app = FastAPI()
 
@@ -13,11 +15,12 @@ suspicious_words = [
     "paypal"
 ]
 
-suspicious_tlds = [
-    ".xyz",
-    ".tk",
-    ".top",
-    ".ru"
+trusted_tlds = [
+    ".com",
+    ".org",
+    ".gov",
+    ".edu",
+    ".us"
 ]
 
 class UrlRequest(BaseModel):
@@ -42,26 +45,49 @@ def scan_url(request: UrlRequest):
 
     info = whois.whois(domain)
 
-    risk_score = 0
+    response = requests.get(request.url)
+    html = response.text
 
-    # suspicious words check
+    soup = BeautifulSoup(html, "html.parser")
+
+    risk_score = 0
+    reasons = []
+
+    login_forms = len(soup.find_all("form"))
+    password_fields = len(soup.find_all("input", {"type": "password"}))
+    scripts = len(soup.find_all("script"))
+
     for word in suspicious_words:
         if word in domain.lower():
             risk_score += 25
+            reasons.append(f"Contains suspicious word: {word}")
 
-    # suspicious domain ending check
-    for tld in suspicious_tlds:
+    domain_is_trusted = False
+
+    for tld in trusted_tlds:
         if domain.endswith(tld):
-            risk_score += 30
+            domain_is_trusted = True
 
-    # very long domains look suspicious
+    if not domain_is_trusted:
+        risk_score += 30
+        reasons.append("Uses uncommon or suspicious domain ending")
+
     if len(domain) > 30:
         risk_score += 20
+        reasons.append("Domain length is suspiciously long")
 
-    # max score = 100
+    if password_fields > 0:
+        reasons.append("Website contains password fields")
+
+    if login_forms > 0:
+        reasons.append("Website contains login forms")
+
+    if scripts > 20:
+        risk_score += 10
+        reasons.append("Website uses many scripts")
+
     risk_score = min(risk_score, 100)
 
-    # threat level system
     if risk_score < 30:
         threat_level = "LOW 🟢"
 
@@ -79,5 +105,9 @@ def scan_url(request: UrlRequest):
         "expiration_date": str(info.expiration_date),
         "risk_score": risk_score,
         "threat_level": threat_level,
+        "login_forms_detected": login_forms,
+        "password_fields_detected": password_fields,
+        "scripts_detected": scripts,
+        "reasons": reasons,
         "status": "Scan complete"
     }
