@@ -1,4 +1,5 @@
 "use client";
+import AIAnalysis from "../components/AIAnalysis";
 import InfoCard from "../components/InfoCard";
 import { useState } from "react";
 import {
@@ -221,15 +222,7 @@ export default function Home() {
             )}
 
             {result && (
-              <div className="mt-6 rounded-xl border border-purple-500/20 bg-purple-500/5 p-5">
-                <h3 className="font-bold text-purple-300">
-                  AI Security Analysis
-                </h3>
-
-                <p className="mt-3 text-gray-300 leading-7">
-                  {buildSecuritySummary()}
-                </p>
-              </div>
+              <AIAnalysis summary={buildSecuritySummary()} />
             )}
           </div>
 
