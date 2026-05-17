@@ -1,5 +1,5 @@
 "use client";
-
+import InfoCard from "../components/InfoCard";
 import { useState } from "react";
 import {
   ShieldCheck,
@@ -345,11 +345,3 @@ export default function Home() {
   );
 }
 
-function InfoCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl bg-black border border-green-500/10 p-4">
-      <p className="text-gray-500">{label}</p>
-      <p className="mt-1 text-gray-200 break-words">{value}</p>
-    </div>
-  );
-}
