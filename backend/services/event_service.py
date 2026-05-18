@@ -2,8 +2,10 @@ from datetime import datetime
 
 
 # Temporary in-memory event storage
-# Later this will move to PostgreSQL or WebSockets
 security_events = []
+
+# Maximum amount of stored events
+MAX_EVENTS = 50
 
 
 def create_event(event_type: str, severity: str, message: str):
@@ -29,7 +31,11 @@ def create_event(event_type: str, severity: str, message: str):
         "timestamp": datetime.now().isoformat(),
     }
 
+    # Add newest event at top
     security_events.insert(0, event)
+
+    # Keep only latest 50 events
+    del security_events[MAX_EVENTS:]
 
     return event
 

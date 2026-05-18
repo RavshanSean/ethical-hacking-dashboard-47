@@ -1,67 +1,77 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Activity, AlertTriangle, CheckCircle, Radar } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  Radar,
+} from "lucide-react";
 
 type LiveEvent = {
-  id: number;
   type: string;
   severity: "LOW" | "MEDIUM" | "HIGH";
   message: string;
-  time: string;
+  timestamp: string;
 };
-
-const simulatedMessages = [
-  {
-    type: "SCAN",
-    severity: "LOW",
-    message: "Background URL scanner heartbeat received",
-  },
-  {
-    type: "NETWORK",
-    severity: "MEDIUM",
-    message: "Unusual script activity pattern detected",
-  },
-  {
-    type: "THREAT",
-    severity: "HIGH",
-    message: "Suspicious phishing-style domain pattern observed",
-  },
-  {
-    type: "SYSTEM",
-    severity: "LOW",
-    message: "Scanner engine health check passed",
-  },
-];
 
 export default function LiveMonitor() {
   const [events, setEvents] = useState<LiveEvent[]>([]);
+  const [error, setError] = useState("");
+
+  async function fetchEvents() {
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:8000/events"
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch events");
+      }
+
+      const data = await response.json();
+
+      setEvents(data.events || []);
+      setError("");
+    } catch {
+      setError(
+        "Live events unavailable. Backend may be offline."
+      );
+    }
+  }
 
   useEffect(() => {
+    fetchEvents();
+
     const interval = setInterval(() => {
-      const randomEvent =
-        simulatedMessages[
-          Math.floor(Math.random() * simulatedMessages.length)
-        ];
-
-      const newEvent: LiveEvent = {
-        id: Date.now(),
-        type: randomEvent.type,
-        severity: randomEvent.severity as "LOW" | "MEDIUM" | "HIGH",
-        message: randomEvent.message,
-        time: new Date().toLocaleTimeString(),
-      };
-
-      setEvents((previous) => [newEvent, ...previous].slice(0, 6));
+      fetchEvents();
     }, 4000);
 
     return () => clearInterval(interval);
   }, []);
 
   function getSeverityColor(severity: string) {
-    if (severity === "HIGH") return "text-red-400 border-red-500/30";
-    if (severity === "MEDIUM") return "text-yellow-300 border-yellow-500/30";
+    if (severity === "HIGH") {
+      return "text-red-400 border-red-500/30";
+    }
+
+    if (severity === "MEDIUM") {
+      return "text-yellow-300 border-yellow-500/30";
+    }
+
     return "text-green-400 border-green-500/30";
+  }
+
+  function getEventIcon(severity: string) {
+    if (severity === "HIGH") {
+      return <AlertTriangle size={18} />;
+    }
+
+    if (severity === "MEDIUM") {
+      return <Activity size={18} />;
+    }
+
+    return <CheckCircle size={18} />;
   }
 
   return (
@@ -74,40 +84,48 @@ export default function LiveMonitor() {
 
         <div className="flex items-center gap-2 text-xs text-green-400">
           <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-          SIMULATED LIVE
+          BACKEND LIVE
         </div>
       </div>
 
+      {error && (
+        <div className="mt-5 rounded-xl border border-red-500/30 bg-black p-4 text-sm text-red-400">
+          {error}
+        </div>
+      )}
+
       <div className="mt-5 grid grid-cols-1 gap-3">
-        {events.length === 0 ? (
+        {events.length === 0 && !error ? (
           <div className="rounded-xl border border-green-500/10 bg-black p-4 text-sm text-gray-500">
-            Waiting for live security events...
+            No backend security events yet.
           </div>
         ) : (
-          events.map((event) => (
+          events.map((event, index) => (
             <div
-              key={event.id}
+              key={index}
               className={`rounded-xl border bg-black p-4 ${getSeverityColor(
                 event.severity
               )}`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {event.severity === "HIGH" ? (
-                    <AlertTriangle size={18} />
-                  ) : event.severity === "MEDIUM" ? (
-                    <Activity size={18} />
-                  ) : (
-                    <CheckCircle size={18} />
-                  )}
+                  {getEventIcon(event.severity)}
 
-                  <p className="font-bold">{event.type}</p>
+                  <p className="font-bold">
+                    {event.type}
+                  </p>
                 </div>
 
-                <p className="text-xs text-gray-500">{event.time}</p>
+                <p className="text-xs text-gray-500">
+                  {new Date(
+                    event.timestamp
+                  ).toLocaleTimeString()}
+                </p>
               </div>
 
-              <p className="mt-2 text-sm text-gray-300">{event.message}</p>
+              <p className="mt-2 text-sm text-gray-300">
+                {event.message}
+              </p>
             </div>
           ))
         )}
