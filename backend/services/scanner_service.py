@@ -1,15 +1,8 @@
-from urllib.parse import urlparse
-
-# Browser automation
 from playwright.sync_api import sync_playwright
-
-# HTML parser
 from bs4 import BeautifulSoup
-
-# Domain information lookup
 import whois
 
-# Risk scoring engine
+from utils.domain_utils import normalize_url, extract_domain
 from utils.risk_engine import calculate_risk
 
 
@@ -17,18 +10,11 @@ from utils.risk_engine import calculate_risk
 # Receives a URL from FastAPI
 def scan_website(input_url: str):
 
-    # Remove spaces from URL
-    input_url = input_url.strip()
+    # Clean and standardize URL
+    input_url = normalize_url(input_url)
 
-    # Auto-add https:// if user forgot it
-    if not input_url.startswith(("http://", "https://")):
-        input_url = "https://" + input_url
-
-    # Break URL into parts
-    parsed_url = urlparse(input_url)
-
-    # Extract domain
-    domain = parsed_url.netloc or parsed_url.path
+    # Extract domain from URL
+    domain = extract_domain(input_url)
 
     # Invalid URL protection
     if not domain:
@@ -48,14 +34,12 @@ def scan_website(input_url: str):
 
     # Try WHOIS lookup
     try:
-        # Get domain registration info
         info = whois.whois(domain)
 
         registrar = str(info.registrar)
         creation_date = str(info.creation_date)
         expiration_date = str(info.expiration_date)
 
-    # WHOIS sometimes fails
     except Exception:
         registrar = "WHOIS lookup failed"
 
@@ -65,30 +49,21 @@ def scan_website(input_url: str):
     # Open real browser with Playwright
     try:
         with sync_playwright() as p:
-
-            # Launch hidden Chromium browser
             browser = p.chromium.launch(headless=True)
-
-            # Create new browser tab
             page = browser.new_page()
 
-            # Open website
             page.goto(
                 input_url,
                 timeout=15000,
                 wait_until="domcontentloaded",
             )
 
-            # Wait for JavaScript to load
             page.wait_for_timeout(2000)
 
-            # Get final rendered HTML
             html = page.content()
 
-            # Close browser
             browser.close()
 
-    # Browser scan failed
     except Exception:
         html = ""
 
@@ -110,22 +85,12 @@ def scan_website(input_url: str):
     scripts = len(soup.find_all("script"))
 
     # Detect browser permission requests
-    camera_microphone_access = (
-        "getusermedia" in page_text
-    )
-
-    location_access = (
-        "geolocation" in page_text
-    )
-
-    notification_access = (
-        "notification.requestpermission" in page_text
-    )
+    camera_microphone_access = "getusermedia" in page_text
+    location_access = "geolocation" in page_text
+    notification_access = "notification.requestpermission" in page_text
 
     # Detect cookies
-    cookie_usage = (
-        "document.cookie" in page_text
-    )
+    cookie_usage = "document.cookie" in page_text
 
     # Detect redirects
     redirect_behavior = (
@@ -141,7 +106,6 @@ def scan_website(input_url: str):
     )
 
     # All collected security indicators
-    # scanner_service collects evidence, risk_engine judges it
     indicators = {
         "login_forms": login_forms,
         "password_fields": password_fields,
@@ -155,10 +119,7 @@ def scan_website(input_url: str):
     }
 
     # Send collected evidence to risk engine
-    risk_result = calculate_risk(
-        domain,
-        indicators,
-    )
+    risk_result = calculate_risk(domain, indicators)
 
     # Extract risk engine result
     risk_score = risk_result["risk_score"]
