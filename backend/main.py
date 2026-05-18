@@ -1,3 +1,6 @@
+from fastapi import WebSocket, WebSocketDisconnect
+from services.websocket_manager import manager
+
 from services.event_service import get_recent_events
 
 # FastAPI framework
@@ -69,3 +72,23 @@ def get_events():
     return {
         "events": get_recent_events()
     }
+    
+# WebSocket live telemetry route
+@app.websocket("/ws/events")
+async def websocket_events(websocket: WebSocket):
+
+    # Accept frontend connection
+    await manager.connect(websocket)
+
+    try:
+        # Keep connection alive forever
+        while True:
+
+            # Wait for frontend messages
+            # (placeholder for future)
+            await websocket.receive_text()
+
+    except WebSocketDisconnect:
+
+        # Remove disconnected frontend
+        manager.disconnect(websocket)

@@ -41,14 +41,36 @@ export default function LiveMonitor() {
   }
 
   useEffect(() => {
-    fetchEvents();
 
-    const interval = setInterval(() => {
-      fetchEvents();
-    }, 4000);
+  // Initial event load
+  fetchEvents();
 
-    return () => clearInterval(interval);
-  }, []);
+  // Create WebSocket connection
+  const websocket = new WebSocket(
+    "ws://127.0.0.1:8000/ws/events"
+  );
+
+  // Listen for incoming backend events
+  websocket.onmessage = (event) => {
+
+    const newEvent = JSON.parse(event.data);
+
+    setEvents((previous) => [
+      newEvent,
+      ...previous,
+    ].slice(0, 10));
+  };
+
+  websocket.onerror = () => {
+    setError("WebSocket connection failed.");
+  };
+
+  // Cleanup connection
+  return () => {
+    websocket.close();
+  };
+
+}, []);
 
   function getSeverityColor(severity: string) {
     if (severity === "HIGH") {
