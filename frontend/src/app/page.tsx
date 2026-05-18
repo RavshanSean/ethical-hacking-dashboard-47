@@ -1,4 +1,5 @@
 "use client";
+import ThreatActivity from "../components/ThreatActivity";
 import StatsCards from "../components/StatsCards";
 import DashboardHeader from "../components/DashboardHeader";
 import Sidebar from "../components/Sidebar";
@@ -127,6 +128,10 @@ export default function Home() {
             scanHistory={scanHistory}
             lastDomain={result?.domain}
           />
+        </div>
+        
+        <div className="mt-6">
+          <ThreatActivity scanHistory={scanHistory} />
         </div>
 
         <div className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
