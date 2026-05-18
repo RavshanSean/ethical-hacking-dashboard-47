@@ -1,3 +1,5 @@
+from services.event_service import get_recent_events
+
 # FastAPI framework
 from fastapi import FastAPI
 
@@ -53,7 +55,6 @@ def home():
         "Ethical Hacking Dashboard #47 backend is alive"
     }
 
-
 # Main scanner API route
 @app.post("/scan-url")
 def scan_url(request: UrlRequest):
@@ -61,3 +62,10 @@ def scan_url(request: UrlRequest):
     # Send URL into scanner engine
     # located inside services/scanner_service.py
     return scan_website(request.url)
+
+# Recent security events API route
+@app.get("/events")
+def get_events():
+    return {
+        "events": get_recent_events()
+    }

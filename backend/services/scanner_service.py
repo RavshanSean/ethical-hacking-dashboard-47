@@ -4,6 +4,7 @@ import whois
 
 from utils.domain_utils import normalize_url, extract_domain
 from utils.risk_engine import calculate_risk
+from services.event_service import create_event
 
 
 # Main scanning function
@@ -125,6 +126,13 @@ def scan_website(input_url: str):
     risk_score = risk_result["risk_score"]
     threat_level = risk_result["threat_level"]
     reasons = risk_result["reasons"]
+    
+    # Create backend security event
+    create_event(
+        event_type="SCAN",
+        severity=threat_level,
+        message=f"URL scan completed for {domain} with {threat_level} risk",
+    )
 
     # Final JSON response sent to frontend
     return {
