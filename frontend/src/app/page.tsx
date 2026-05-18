@@ -1,4 +1,5 @@
 "use client";
+import EventHistory from "@/components/EventHistory";
 import LiveMonitor from "../components/LiveMonitor";
 import ThreatActivity from "../components/ThreatActivity";
 import StatsCards from "../components/StatsCards";
@@ -136,6 +137,10 @@ export default function Home() {
         
         <div className="mt-6">
           <ThreatActivity scanHistory={scanHistory} />
+        </div>
+
+        <div className="mt-10">
+          <EventHistory />
         </div>
 
         <div className="mt-6">

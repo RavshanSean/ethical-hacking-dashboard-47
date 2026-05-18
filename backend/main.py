@@ -1,6 +1,7 @@
+from db.database import SessionLocal
+from db.models import SecurityEvent
 from fastapi import WebSocket, WebSocketDisconnect
 from services.websocket_manager import manager
-
 from services.event_service import get_recent_events
 
 # FastAPI framework
@@ -75,6 +76,41 @@ def scan_url(request: UrlRequest):
 def get_events():
     return {
         "events": get_recent_events()
+    }
+    
+# Telemetry statistics API
+@app.get("/stats")
+def get_stats():
+
+    db = SessionLocal()
+
+    total_events = db.query(SecurityEvent).count()
+
+    high_threats = (
+        db.query(SecurityEvent)
+        .filter(SecurityEvent.severity == "HIGH")
+        .count()
+    )
+
+    medium_threats = (
+        db.query(SecurityEvent)
+        .filter(SecurityEvent.severity == "MEDIUM")
+        .count()
+    )
+
+    low_threats = (
+        db.query(SecurityEvent)
+        .filter(SecurityEvent.severity == "LOW")
+        .count()
+    )
+
+    db.close()
+
+    return {
+        "total_events": total_events,
+        "high_threats": high_threats,
+        "medium_threats": medium_threats,
+        "low_threats": low_threats,
     }
     
 # WebSocket live telemetry route
