@@ -15,9 +15,13 @@ from pydantic import BaseModel
 # Import our scanner engine
 from services.scanner_service import scan_website
 
+from db.database import Base, engine
+from db import models
 
 # Create FastAPI app
 app = FastAPI()
+# Create database tables
+Base.metadata.create_all(bind=engine)
 
 
 # CORS configuration

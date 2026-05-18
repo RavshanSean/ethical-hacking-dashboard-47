@@ -1,10 +1,12 @@
+from sqlalchemy.orm import Session
+
+from db.database import SessionLocal
+from db.models import SecurityEvent
+
 from datetime import datetime
 import asyncio
 
 from services.websocket_manager import manager
-
-
-security_events = []
 
 MAX_EVENTS = 50
 
@@ -17,14 +19,28 @@ def create_event(event_type: str, severity: str, message: str):
         "timestamp": datetime.now().isoformat(),
     }
 
-    security_events.insert(0, event)
+    db: Session = SessionLocal()
 
-    del security_events[MAX_EVENTS:]
+    db_event = SecurityEvent(
+        event_type=event_type,
+        severity=severity,
+        message=message,
+        timestamp=event["timestamp"],
+    )
 
-    # Try to broadcast event to connected frontend dashboards
+    db.add(db_event)
+
+    db.commit()
+
+    db.refresh(db_event)
+
+    db.close()
+    
+    # Broadcast live telemetry to connected dashboards
     try:
         loop = asyncio.get_running_loop()
         loop.create_task(manager.broadcast(event))
+
     except RuntimeError:
         pass
 
@@ -32,4 +48,24 @@ def create_event(event_type: str, severity: str, message: str):
 
 
 def get_recent_events(limit: int = 10):
-    return security_events[:limit]
+
+    db: Session = SessionLocal()
+
+    events = (
+        db.query(SecurityEvent)
+        .order_by(SecurityEvent.id.desc())
+        .limit(limit)
+        .all()
+    )
+
+    db.close()
+
+    return [
+        {
+            "type": event.event_type,
+            "severity": event.severity,
+            "message": event.message,
+            "timestamp": event.timestamp,
+        }
+        for event in events
+    ]
