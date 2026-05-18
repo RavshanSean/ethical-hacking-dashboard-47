@@ -1,4 +1,6 @@
 "use client";
+import StatsCards from "../components/StatsCards";
+import DashboardHeader from "../components/DashboardHeader";
 import Sidebar from "../components/Sidebar";
 import SystemOverview from "../components/SystemOverview";
 import RecentScans from "../components/RecentScans";
@@ -119,18 +121,12 @@ export default function Home() {
 
   <main className="flex-1 p-8">
       <section className="max-w-6xl mx-auto">
-        <div>
-          <p className="text-sm text-green-400 tracking-widest uppercase">
-            Security Platform
-          </p>
-
-          <h1 className="mt-2 text-4xl font-bold">
-            Ethical Hacking Dashboard #47
-          </h1>
-
-          <p className="mt-3 text-gray-400">
-            Scan URLs, analyze web behavior, and detect suspicious indicators.
-          </p>
+        <DashboardHeader />
+        <div className="mt-6">
+          <StatsCards
+            scanHistory={scanHistory}
+            lastDomain={result?.domain}
+          />
         </div>
 
         <div className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
