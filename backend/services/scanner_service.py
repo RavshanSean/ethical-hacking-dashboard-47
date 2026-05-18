@@ -150,5 +150,8 @@ def scan_website(input_url: str):
             "permissions later after login or interaction."
         ),
         "reasons": reasons,
+        "scan_type": "Dynamic browser scan",
+        "engine_version": "0.1.0",
+        "analysis_source": "Local rules + threat intelligence",
         "status": "Scan complete",
     }

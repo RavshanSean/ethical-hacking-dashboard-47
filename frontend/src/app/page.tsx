@@ -1,4 +1,5 @@
 "use client";
+import LiveMonitor from "../components/LiveMonitor";
 import ThreatActivity from "../components/ThreatActivity";
 import StatsCards from "../components/StatsCards";
 import DashboardHeader from "../components/DashboardHeader";
@@ -32,6 +33,9 @@ type ScanResult = {
   location_access: boolean;
   notification_access: boolean;
   permission_note: string;
+  scan_type: string;
+  engine_version: string;
+  analysis_source: string;
 };
 
 type ScanHistoryItem = {
@@ -132,6 +136,10 @@ export default function Home() {
         
         <div className="mt-6">
           <ThreatActivity scanHistory={scanHistory} />
+        </div>
+
+        <div className="mt-6">
+          <LiveMonitor />
         </div>
 
         <div className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -270,6 +278,20 @@ export default function Home() {
               <InfoCard
                 label="Notifications"
                 value={String(result.notification_access)}
+              />
+              <InfoCard
+                label="Scan Type"
+                value={result.scan_type}
+              />
+
+              <InfoCard
+                label="Engine Version"
+                value={result.engine_version}
+              />
+
+              <InfoCard
+                label="Analysis Source"
+                value={result.analysis_source}
               />
             </div>
 
