@@ -1,3 +1,5 @@
+from utils.threat_intel import check_threat_intel
+
 # Suspicious keywords often used in phishing or scam domains
 SUSPICIOUS_WORDS = [
     "login",
@@ -40,6 +42,12 @@ def calculate_risk(domain: str, indicators: dict):
 
     risk_score = 0
     reasons = []
+    # Check local threat intelligence rules
+    threat_intel_result = check_threat_intel(domain)
+
+    risk_score += threat_intel_result["risk_points"]
+
+    reasons.extend(threat_intel_result["reasons"])
 
     # Check if domain contains suspicious phishing words
     for word in SUSPICIOUS_WORDS:
