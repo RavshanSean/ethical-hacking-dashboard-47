@@ -1,10 +1,10 @@
-from db.database import SessionLocal
-from db.models import SecurityEvent
+
 from fastapi import WebSocket, WebSocketDisconnect
 from services.websocket_manager import manager
-from services.event_service import get_recent_events
-from collections import defaultdict
 
+from routes.scanner_routes import router as scanner_router
+from routes.event_routes import router as event_router
+from routes.stats_routes import router as stats_router
 # FastAPI framework
 from fastapi import FastAPI
 
@@ -12,16 +12,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Data validation for incoming JSON
-from pydantic import BaseModel
 
 # Import our scanner engine
-from services.scanner_service import scan_website
 
 from db.database import Base, engine
 from db import models
 
 # Create FastAPI app
 app = FastAPI()
+app.include_router(scanner_router)
+app.include_router(event_router)
+app.include_router(stats_router)
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
@@ -50,9 +51,6 @@ app.add_middleware(
 # {
 #   "url": "https://instagram.com"
 # }
-class UrlRequest(BaseModel):
-
-    url: str
 
 
 # Simple test route
@@ -62,95 +60,6 @@ def home():
     return {
         "message":
         "Ethical Hacking Dashboard #47 backend is alive"
-    }
-
-# Main scanner API route
-@app.post("/scan-url")
-def scan_url(request: UrlRequest):
-
-    # Send URL into scanner engine
-    # located inside services/scanner_service.py
-    return scan_website(request.url)
-
-# Recent security events API route
-@app.get("/events")
-def get_events():
-    return {
-        "events": get_recent_events()
-    }
-    
-# Telemetry statistics API
-@app.get("/stats")
-def get_stats():
-
-    db = SessionLocal()
-
-    total_events = db.query(SecurityEvent).count()
-
-    high_threats = (
-        db.query(SecurityEvent)
-        .filter(SecurityEvent.severity == "HIGH")
-        .count()
-    )
-
-    medium_threats = (
-        db.query(SecurityEvent)
-        .filter(SecurityEvent.severity == "MEDIUM")
-        .count()
-    )
-
-    low_threats = (
-        db.query(SecurityEvent)
-        .filter(SecurityEvent.severity == "LOW")
-        .count()
-    )
-
-    db.close()
-
-    return {
-        "total_events": total_events,
-        "high_threats": high_threats,
-        "medium_threats": medium_threats,
-        "low_threats": low_threats,
-    }
-    
-# Telemetry timeline API
-@app.get("/stats/timeline")
-def get_timeline_stats():
-
-    db = SessionLocal()
-
-    events = db.query(SecurityEvent).all()
-
-    timeline = defaultdict(lambda: {
-        "LOW": 0,
-        "MEDIUM": 0,
-        "HIGH": 0,
-        "TOTAL": 0,
-    })
-
-    for event in events:
-
-        # Example timestamp:
-        # 2026-05-18T17:00:00
-        hour = event.timestamp[:13] + ":00"
-
-        timeline[hour][event.severity] += 1
-        timeline[hour]["TOTAL"] += 1
-
-    db.close()
-
-    return {
-        "timeline": [
-            {
-                "time": time,
-                "low": values["LOW"],
-                "medium": values["MEDIUM"],
-                "high": values["HIGH"],
-                "total": values["TOTAL"],
-            }
-            for time, values in sorted(timeline.items())
-        ]
     }
     
 # WebSocket live telemetry route
