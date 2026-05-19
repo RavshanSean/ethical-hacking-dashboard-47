@@ -1,7 +1,4 @@
-
-from fastapi import WebSocket, WebSocketDisconnect
-from services.websocket_manager import manager
-
+from routes.websocket_routes import router as websocket_router
 from routes.scanner_routes import router as scanner_router
 from routes.event_routes import router as event_router
 from routes.stats_routes import router as stats_router
@@ -23,6 +20,7 @@ app = FastAPI()
 app.include_router(scanner_router)
 app.include_router(event_router)
 app.include_router(stats_router)
+app.include_router(websocket_router)
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
@@ -61,23 +59,3 @@ def home():
         "message":
         "Ethical Hacking Dashboard #47 backend is alive"
     }
-    
-# WebSocket live telemetry route
-@app.websocket("/ws/events")
-async def websocket_events(websocket: WebSocket):
-
-    # Accept frontend connection
-    await manager.connect(websocket)
-
-    try:
-        # Keep connection alive forever
-        while True:
-
-            # Wait for frontend messages
-            # (placeholder for future)
-            await websocket.receive_text()
-
-    except WebSocketDisconnect:
-
-        # Remove disconnected frontend
-        manager.disconnect(websocket)
