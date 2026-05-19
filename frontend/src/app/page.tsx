@@ -130,7 +130,7 @@ export default function Home() {
         <Sidebar />
 
         <main className="flex-1 p-6">
-          <section className="mx-auto max-w-7xl">
+          <section id="dashboard" className="mx-auto max-w-7xl">
             <DashboardHeader />
 
             <div className="mt-6">
@@ -140,7 +140,7 @@ export default function Home() {
               />
             </div>
 
-            <div className="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div id="analytics" className="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
               <div className="xl:col-span-2">
                 <ThreatTimeline />
               </div>
@@ -150,13 +150,13 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div id="live-monitor" className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6">
               <LiveMonitor />
 
               <ThreatActivity scanHistory={scanHistory} />
             </div>
 
-            <div className="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div id="scanner" className="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
               <div className="xl:col-span-2 rounded-2xl border border-green-500/20 bg-[#0b1220] p-6">
                 <h2 className="text-2xl font-semibold text-green-300">
                   URL Threat Scanner
@@ -262,9 +262,9 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="mt-6">
-              <EventHistory />
-            </div>
+              <div id="logs" className="mt-6">
+                <EventHistory />
+              </div>
 
             {result && (
               <div className="mt-6 rounded-2xl border border-green-500/20 bg-[#0b1220] p-6">
