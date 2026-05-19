@@ -1,6 +1,9 @@
 "use client";
 
-import { API_BASE_URL } from "@/config/api";
+import {
+  API_BASE_URL,
+  WS_BASE_URL,
+} from "@/config/api";
 import { useEffect, useState } from "react";
 import {
   Activity,
@@ -48,7 +51,7 @@ export default function LiveMonitor() {
 
   // Create WebSocket connection
   const websocket = new WebSocket(
-    "ws://127.0.0.1:8000/ws/events"
+    `${WS_BASE_URL}/ws/events`
   );
 
   // Listen for incoming backend events
