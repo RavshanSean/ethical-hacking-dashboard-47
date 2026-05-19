@@ -5,6 +5,7 @@ import whois
 from utils.domain_utils import normalize_url, extract_domain
 from utils.risk_engine import calculate_risk
 from services.event_service import create_event
+from services.scan_result_service import save_scan_result
 
 
 # Main scanning function
@@ -135,7 +136,8 @@ def scan_website(input_url: str):
     )
 
     # Final JSON response sent to frontend
-    return {
+    # Final JSON response sent to frontend
+    scan_result = {
         "url": input_url,
         "domain": domain,
         "registrar": registrar,
@@ -163,3 +165,8 @@ def scan_website(input_url: str):
         "analysis_source": "Local rules + threat intelligence",
         "status": "Scan complete",
     }
+
+# Save full scan report to database
+    save_scan_result(scan_result)
+
+    return scan_result
