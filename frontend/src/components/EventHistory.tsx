@@ -58,7 +58,7 @@ export default function EventHistory() {
 
       </div>
 
-      <div className="space-y-4">
+      <div className="max-h-[300px] space-y-4 overflow-y-auto pr-2">
 
         {events.map((event, index) => (
 

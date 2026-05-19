@@ -134,30 +134,10 @@ export default function Home() {
           <section id="dashboard" className="mx-auto max-w-7xl">
             <DashboardHeader />
 
-            <div className="mt-6">
-              <StatsCards
-                scanHistory={scanHistory}
-                lastDomain={result?.domain}
-              />
-            </div>
-
-            <div id="analytics" className="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
-              <div className="xl:col-span-2">
-                <ThreatTimeline />
-              </div>
-
-              <div>
-                <ThreatChart />
-              </div>
-            </div>
-
-            <div id="live-monitor" className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <LiveMonitor />
-
-              <ThreatActivity scanHistory={scanHistory} />
-            </div>
-
-            <div id="scanner" className="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div
+              id="scanner"
+              className="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-6"
+            >
               <div className="xl:col-span-2 rounded-2xl border border-green-500/20 bg-[#0b1220] p-6">
                 <h2 className="text-2xl font-semibold text-green-300">
                   URL Threat Scanner
@@ -200,7 +180,9 @@ export default function Home() {
                       className={`rounded-xl border ${threatStyle.border} ${threatStyle.bg} p-4`}
                     >
                       <p className="text-sm text-gray-400">Risk Score</p>
-                      <p className={`mt-2 text-3xl font-bold ${threatStyle.text}`}>
+                      <p
+                        className={`mt-2 text-3xl font-bold ${threatStyle.text}`}
+                      >
                         {result.risk_score}/100
                       </p>
                     </div>
@@ -214,9 +196,15 @@ export default function Home() {
                         {result.risk_score >= 70 ? (
                           <ShieldX className="text-red-400" size={28} />
                         ) : result.risk_score >= 30 ? (
-                          <ShieldAlert className="text-yellow-300" size={28} />
+                          <ShieldAlert
+                            className="text-yellow-300"
+                            size={28}
+                          />
                         ) : (
-                          <ShieldCheck className="text-green-400" size={28} />
+                          <ShieldCheck
+                            className="text-green-400"
+                            size={28}
+                          />
                         )}
 
                         <p className={`text-2xl font-bold ${threatStyle.text}`}>
@@ -262,10 +250,6 @@ export default function Home() {
                 <RecentScans scans={scanHistory} />
               </div>
             </div>
-
-              <div id="logs" className="mt-6">
-                <EventHistory />
-              </div>
 
             {result && (
               <div className="mt-6 rounded-2xl border border-green-500/20 bg-[#0b1220] p-6">
@@ -314,6 +298,39 @@ export default function Home() {
                 </p>
               </div>
             )}
+
+            <div id="logs" className="mt-6">
+              <EventHistory />
+            </div>
+
+            <div className="mt-6">
+              <StatsCards
+                scanHistory={scanHistory}
+                lastDomain={result?.domain}
+              />
+            </div>
+
+            <div
+              id="analytics"
+              className="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-6"
+            >
+              <div className="xl:col-span-2">
+                <ThreatTimeline />
+              </div>
+
+              <div>
+                <ThreatChart />
+              </div>
+            </div>
+
+            <div
+              id="live-monitor"
+              className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6"
+            >
+              <LiveMonitor />
+
+              <ThreatActivity scanHistory={scanHistory} />
+            </div>
           </section>
         </main>
       </div>
