@@ -1,5 +1,5 @@
 "use client";
-
+import { API_BASE_URL } from "@/config/api";
 import { useEffect, useState } from "react";
 
 type ScanHistoryItem = {
@@ -32,7 +32,7 @@ export default function StatsCards({
 
   async function loadStats() {
     try {
-      const response = await fetch("http://127.0.0.1:8000/stats");
+      const response = await fetch(`${API_BASE_URL}/stats`)
       const data = await response.json();
 
       setStats(data);

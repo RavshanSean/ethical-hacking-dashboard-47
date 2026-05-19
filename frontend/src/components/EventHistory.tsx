@@ -1,5 +1,5 @@
 "use client";
-
+import { API_BASE_URL } from "@/config/api";
 import { useEffect, useState } from "react";
 
 interface SecurityEvent {
@@ -18,7 +18,7 @@ export default function EventHistory() {
     try {
 
       const response = await fetch(
-        "http://127.0.0.1:8000/events"
+        `${API_BASE_URL}/events`
       );
 
       const data = await response.json();

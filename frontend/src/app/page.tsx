@@ -12,6 +12,7 @@ import AIAnalysis from "../components/AIAnalysis";
 import InfoCard from "../components/InfoCard";
 import ThreatChart from "../components/ThreatChart";
 import ThreatTimeline from "../components/ThreatTimeline";
+import { API_BASE_URL } from "@/config/api";
 import { useState } from "react";
 import {
   ShieldCheck,
@@ -60,7 +61,7 @@ export default function Home() {
     setError("");
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/scan-url", {
+      const response = await fetch(`${API_BASE_URL}/scan-url`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
