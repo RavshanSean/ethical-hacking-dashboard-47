@@ -3,6 +3,7 @@ from db.models import SecurityEvent
 from fastapi import WebSocket, WebSocketDisconnect
 from services.websocket_manager import manager
 from services.event_service import get_recent_events
+from collections import defaultdict
 
 # FastAPI framework
 from fastapi import FastAPI
@@ -111,6 +112,45 @@ def get_stats():
         "high_threats": high_threats,
         "medium_threats": medium_threats,
         "low_threats": low_threats,
+    }
+    
+# Telemetry timeline API
+@app.get("/stats/timeline")
+def get_timeline_stats():
+
+    db = SessionLocal()
+
+    events = db.query(SecurityEvent).all()
+
+    timeline = defaultdict(lambda: {
+        "LOW": 0,
+        "MEDIUM": 0,
+        "HIGH": 0,
+        "TOTAL": 0,
+    })
+
+    for event in events:
+
+        # Example timestamp:
+        # 2026-05-18T17:00:00
+        hour = event.timestamp[:13] + ":00"
+
+        timeline[hour][event.severity] += 1
+        timeline[hour]["TOTAL"] += 1
+
+    db.close()
+
+    return {
+        "timeline": [
+            {
+                "time": time,
+                "low": values["LOW"],
+                "medium": values["MEDIUM"],
+                "high": values["HIGH"],
+                "total": values["TOTAL"],
+            }
+            for time, values in sorted(timeline.items())
+        ]
     }
     
 # WebSocket live telemetry route

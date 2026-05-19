@@ -9,6 +9,8 @@ import SystemOverview from "../components/SystemOverview";
 import RecentScans from "../components/RecentScans";
 import AIAnalysis from "../components/AIAnalysis";
 import InfoCard from "../components/InfoCard";
+import ThreatChart from "../components/ThreatChart";
+import ThreatTimeline from "../components/ThreatTimeline";
 import { useState } from "react";
 import {
   ShieldCheck,
@@ -134,6 +136,15 @@ export default function Home() {
             lastDomain={result?.domain}
           />
         </div>
+
+        <div className="mt-6">
+            <ThreatChart />
+        </div>
+
+        <div className="mt-6">
+          <ThreatTimeline />
+        </div>
+        
         
         <div className="mt-6">
           <ThreatActivity scanHistory={scanHistory} />
