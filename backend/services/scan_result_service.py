@@ -64,3 +64,40 @@ def get_recent_scan_results(limit: int = 10):
         }
         for scan in scans
     ]
+    
+    
+def get_scan_result_by_id(scan_id: int):
+    db: Session = SessionLocal()
+
+    scan = (
+        db.query(ScanResult)
+        .filter(ScanResult.id == scan_id)
+        .first()
+    )
+
+    db.close()
+
+    if not scan:
+        return None
+
+    return {
+        "id": scan.id,
+        "url": scan.url,
+        "domain": scan.domain,
+        "registrar": scan.registrar,
+        "creation_date": scan.creation_date,
+        "expiration_date": scan.expiration_date,
+        "risk_score": scan.risk_score,
+        "threat_level": scan.threat_level,
+        "reasons": scan.reasons,
+        "scripts_detected": scan.scripts_detected,
+        "login_forms_detected": scan.login_forms_detected,
+        "password_fields_detected": scan.password_fields_detected,
+        "camera_microphone_access": scan.camera_microphone_access,
+        "location_access": scan.location_access,
+        "notification_access": scan.notification_access,
+        "scan_type": scan.scan_type,
+        "engine_version": scan.engine_version,
+        "analysis_source": scan.analysis_source,
+        "created_at": scan.created_at,
+    }
