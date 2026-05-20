@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String
 from db.database import Base
 
 
+
 class SecurityEvent(Base):
     """
     Stores backend security telemetry events.

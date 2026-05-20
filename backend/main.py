@@ -2,6 +2,7 @@ from routes.websocket_routes import router as websocket_router
 from routes.scanner_routes import router as scanner_router
 from routes.event_routes import router as event_router
 from routes.stats_routes import router as stats_router
+from routes.scan_result_routes import router as scan_result_router
 # FastAPI framework
 from fastapi import FastAPI
 
@@ -21,6 +22,7 @@ app.include_router(scanner_router)
 app.include_router(event_router)
 app.include_router(stats_router)
 app.include_router(websocket_router)
+app.include_router(scan_result_router)
 # Create database tables
 Base.metadata.create_all(bind=engine)
 

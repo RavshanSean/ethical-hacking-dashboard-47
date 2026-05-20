@@ -29,7 +29,7 @@ export default function ThreatChart() {
   async function loadStats() {
 
     try {
-
+ 
       const response = await fetch(`${API_BASE_URL}/stats`)
 
       const data = await response.json();

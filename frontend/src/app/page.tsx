@@ -247,7 +247,7 @@ export default function Home() {
               <div className="space-y-6">
                 <SystemOverview />
 
-                <RecentScans scans={scanHistory} />
+                <RecentScans />
               </div>
             </div>
 

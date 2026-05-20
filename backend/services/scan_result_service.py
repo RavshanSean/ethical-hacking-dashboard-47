@@ -37,3 +37,30 @@ def save_scan_result(scan_data: dict):
     db.close()
 
     return scan_result
+
+
+def get_recent_scan_results(limit: int = 10):
+    db: Session = SessionLocal()
+
+    scans = (
+        db.query(ScanResult)
+        .order_by(ScanResult.id.desc())
+        .limit(limit)
+        .all()
+    )
+
+    db.close()
+
+    return [
+        {
+            "id": scan.id,
+            "url": scan.url,
+            "domain": scan.domain,
+            "risk_score": scan.risk_score,
+            "threat_level": scan.threat_level,
+            "registrar": scan.registrar,
+            "created_at": scan.created_at,
+            "scan_type": scan.scan_type,
+        }
+        for scan in scans
+    ]
