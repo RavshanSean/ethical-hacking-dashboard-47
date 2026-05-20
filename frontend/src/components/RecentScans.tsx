@@ -14,8 +14,23 @@ type SavedScan = {
   scan_type: string;
 };
 
+type FullScanReport = SavedScan & {
+  creation_date: string;
+  expiration_date: string;
+  reasons: string;
+  scripts_detected: number;
+  login_forms_detected: number;
+  password_fields_detected: number;
+  camera_microphone_access: string;
+  location_access: string;
+  notification_access: string;
+  engine_version: string;
+  analysis_source: string;
+};
+
 export default function RecentScans() {
   const [scans, setScans] = useState<SavedScan[]>([]);
+  const [selectedScan, setSelectedScan] = useState<FullScanReport | null>(null);
 
   async function loadScans() {
     try {
@@ -25,6 +40,17 @@ export default function RecentScans() {
       setScans(data.scan_results || []);
     } catch (error) {
       console.error("Failed to load saved scans:", error);
+    }
+  }
+
+  async function loadScanDetails(scanId: number) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/scan-results/${scanId}`);
+      const data = await response.json();
+
+      setSelectedScan(data);
+    } catch (error) {
+      console.error("Failed to load scan detail:", error);
     }
   }
 
@@ -51,9 +77,10 @@ export default function RecentScans() {
           </p>
         ) : (
           scans.map((scan) => (
-            <div
+            <button
               key={scan.id}
-              className="rounded-xl border border-green-500/10 bg-black p-4"
+              onClick={() => loadScanDetails(scan.id)}
+              className="w-full text-left rounded-xl border border-green-500/10 bg-black p-4 transition hover:border-green-400/40 hover:bg-green-500/5"
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -83,10 +110,59 @@ export default function RecentScans() {
                 <span>Risk: {scan.risk_score}/100</span>
                 <span>{new Date(scan.created_at).toLocaleString()}</span>
               </div>
-            </div>
+            </button>
           ))
         )}
       </div>
+
+      {selectedScan && (
+        <div className="mt-5 rounded-xl border border-cyan-500/20 bg-black p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-cyan-300">
+              Selected Report
+            </h3>
+
+            <button
+              onClick={() => setSelectedScan(null)}
+              className="text-xs text-gray-500 hover:text-white"
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-2 text-sm text-gray-300">
+            <p>
+              <span className="text-gray-500">Domain:</span>{" "}
+              {selectedScan.domain}
+            </p>
+
+            <p>
+              <span className="text-gray-500">Risk:</span>{" "}
+              {selectedScan.risk_score}/100
+            </p>
+
+            <p>
+              <span className="text-gray-500">Threat:</span>{" "}
+              {selectedScan.threat_level}
+            </p>
+
+            <p>
+              <span className="text-gray-500">Registrar:</span>{" "}
+              {selectedScan.registrar}
+            </p>
+
+            <p>
+              <span className="text-gray-500">Scripts:</span>{" "}
+              {selectedScan.scripts_detected}
+            </p>
+
+            <p>
+              <span className="text-gray-500">Engine:</span>{" "}
+              {selectedScan.engine_version}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
