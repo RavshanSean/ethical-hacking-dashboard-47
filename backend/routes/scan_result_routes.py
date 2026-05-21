@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from services.scan_result_service import (
     get_recent_scan_results,
@@ -10,11 +10,17 @@ router = APIRouter()
 
 
 @router.get("/scan-results")
-def scan_results():
+def scan_results(
+    threat_level: str | None = Query(default=None),
+    page: int = Query(default=1),
+    limit: int = Query(default=10),
+):
 
-    return {
-        "scan_results": get_recent_scan_results()
-    }
+    return get_recent_scan_results(
+    limit=limit,
+    page=page,
+    threat_level=threat_level,
+)
 
 
 @router.get("/scan-results/{scan_id}")

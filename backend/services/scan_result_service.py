@@ -39,31 +39,53 @@ def save_scan_result(scan_data: dict):
     return scan_result
 
 
-def get_recent_scan_results(limit: int = 10):
+def get_recent_scan_results(
+    limit: int = 10,
+    page: int = 1,
+    threat_level: str | None = None,
+):
     db: Session = SessionLocal()
 
+    query = db.query(ScanResult)
+
+    if threat_level:
+        query = query.filter(
+            ScanResult.threat_level == threat_level
+        )
+
+    total_results = query.count()
+
+    offset = (page - 1) * limit
+
     scans = (
-        db.query(ScanResult)
+        query
         .order_by(ScanResult.id.desc())
+        .offset(offset)
         .limit(limit)
         .all()
     )
 
     db.close()
 
-    return [
-        {
-            "id": scan.id,
-            "url": scan.url,
-            "domain": scan.domain,
-            "risk_score": scan.risk_score,
-            "threat_level": scan.threat_level,
-            "registrar": scan.registrar,
-            "created_at": scan.created_at,
-            "scan_type": scan.scan_type,
-        }
-        for scan in scans
-    ]
+    return {
+        "items": [
+            {
+                "id": scan.id,
+                "url": scan.url,
+                "domain": scan.domain,
+                "risk_score": scan.risk_score,
+                "threat_level": scan.threat_level,
+                "registrar": scan.registrar,
+                "created_at": scan.created_at,
+                "scan_type": scan.scan_type,
+            }
+            for scan in scans
+        ],
+        "page": page,
+        "limit": limit,
+        "total_results": total_results,
+        "has_next": page * limit < total_results,
+    }
     
     
 def get_scan_result_by_id(scan_id: int):

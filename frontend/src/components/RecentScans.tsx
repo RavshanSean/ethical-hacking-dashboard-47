@@ -3,6 +3,8 @@
 import { API_BASE_URL } from "@/config/api";
 import { useEffect, useState } from "react";
 
+type ThreatFilter = "ALL" | "HIGH" | "MEDIUM" | "LOW";
+
 type SavedScan = {
   id: number;
   url: string;
@@ -30,14 +32,26 @@ type FullScanReport = SavedScan & {
 
 export default function RecentScans() {
   const [scans, setScans] = useState<SavedScan[]>([]);
-  const [selectedScan, setSelectedScan] = useState<FullScanReport | null>(null);
+  const [hasNextPage, setHasNextPage] =
+    useState(false);
+  const [page, setPage] = useState(1);
+  const [selectedScan, setSelectedScan] =
+    useState<FullScanReport | null>(null);
+  const [threatFilter, setThreatFilter] =
+    useState<ThreatFilter>("ALL");
 
   async function loadScans() {
     try {
-      const response = await fetch(`${API_BASE_URL}/scan-results`);
+      const endpoint =
+        threatFilter === "ALL"
+          ? `${API_BASE_URL}/scan-results?page=${page}&limit=5`
+          : `${API_BASE_URL}/scan-results?page=${page}&limit=5&threat_level=${threatFilter}`;
+
+      const response = await fetch(endpoint);
       const data = await response.json();
 
-      setScans(data.scan_results || []);
+      setScans(data.items || []);
+      setHasNextPage(data.has_next);
     } catch (error) {
       console.error("Failed to load saved scans:", error);
     }
@@ -45,7 +59,9 @@ export default function RecentScans() {
 
   async function loadScanDetails(scanId: number) {
     try {
-      const response = await fetch(`${API_BASE_URL}/scan-results/${scanId}`);
+      const response = await fetch(
+        `${API_BASE_URL}/scan-results/${scanId}`
+      );
       const data = await response.json();
 
       setSelectedScan(data);
@@ -62,25 +78,53 @@ export default function RecentScans() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [threatFilter, page]);
 
   return (
     <div className="rounded-2xl border border-green-500/20 bg-[#0b1220] p-6">
-      <h2 className="text-2xl font-semibold text-green-300">
-        Saved Scan History
-      </h2>
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-2xl font-semibold text-green-300">
+          Saved Scan History
+        </h2>
+
+        <span className="text-xs text-green-400">
+          DATABASE
+        </span>
+      </div>
+
+      <div className="mt-5 flex flex-wrap gap-2">
+        {(["ALL", "HIGH", "MEDIUM", "LOW"] as ThreatFilter[]).map(
+          (level) => (
+            <button
+              key={level}
+              onClick={() => {
+                setThreatFilter(level);
+                setSelectedScan(null);
+                setPage(1);
+              }}
+              className={`rounded-full px-3 py-1 text-xs font-bold transition ${
+                threatFilter === level
+                  ? "bg-green-500 text-black"
+                  : "border border-green-500/20 bg-black text-gray-400 hover:text-green-300"
+              }`}
+            >
+              {level}
+            </button>
+          )
+        )}
+      </div>
 
       <div className="mt-5 max-h-[300px] space-y-3 overflow-y-auto pr-2">
         {scans.length === 0 ? (
           <p className="text-sm text-gray-500">
-            No saved scans yet.
+            No saved scans for this filter.
           </p>
         ) : (
           scans.map((scan) => (
             <button
               key={scan.id}
               onClick={() => loadScanDetails(scan.id)}
-              className="w-full text-left rounded-xl border border-green-500/10 bg-black p-4 transition hover:border-green-400/40 hover:bg-green-500/5"
+              className="w-full rounded-xl border border-green-500/10 bg-black p-4 text-left transition hover:border-green-400/40 hover:bg-green-500/5"
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -113,6 +157,34 @@ export default function RecentScans() {
             </button>
           ))
         )}
+      </div>
+
+      <div className="mt-4 flex items-center justify-between">
+        <button
+          onClick={() =>
+            setPage((current) =>
+              Math.max(1, current - 1)
+            ) 
+          }
+          disabled={page === 1}
+          className="rounded-lg border border-green-500/20 bg-black px-3 py-2 text-xs text-gray-300 disabled:opacity-40"
+        >
+          Previous
+        </button>
+
+        <span className="text-xs text-gray-500">
+          Page {page}
+        </span>
+
+        <button
+          onClick={() =>
+            setPage((current) => current + 1)
+          }
+          disabled={!hasNextPage}
+          className="rounded-lg border border-green-500/20 bg-black px-3 py-2 text-xs text-gray-300 disabled:opacity-40"
+        >
+          Next
+        </button>
       </div>
 
       {selectedScan && (
