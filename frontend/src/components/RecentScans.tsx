@@ -35,6 +35,7 @@ export default function RecentScans() {
   const [hasNextPage, setHasNextPage] =
     useState(false);
   const [page, setPage] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
   const [selectedScan, setSelectedScan] =
     useState<FullScanReport | null>(null);
   const [threatFilter, setThreatFilter] =
@@ -52,6 +53,7 @@ export default function RecentScans() {
 
       setScans(data.items || []);
       setHasNextPage(data.has_next);
+      setTotalResults(data.total_results || 0);
     } catch (error) {
       console.error("Failed to load saved scans:", error);
     }
@@ -88,7 +90,7 @@ export default function RecentScans() {
         </h2>
 
         <span className="text-xs text-green-400">
-          DATABASE
+          {totalResults} scans
         </span>
       </div>
 

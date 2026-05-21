@@ -6,6 +6,7 @@ from utils.domain_utils import normalize_url, extract_domain
 from utils.risk_engine import calculate_risk
 from services.event_service import create_event
 from services.scan_result_service import save_scan_result
+from services.ai_report_service import generate_ai_summary
 
 
 # Main scanning function
@@ -127,6 +128,14 @@ def scan_website(input_url: str):
     risk_score = risk_result["risk_score"]
     threat_level = risk_result["threat_level"]
     reasons = risk_result["reasons"]
+    # Generate AI-powered security summary
+    ai_summary = generate_ai_summary({
+        "risk_score": risk_score,
+        "threat_level": threat_level,
+        "scripts_detected": scripts,
+        "login_forms_detected": login_forms,
+        "reasons": reasons,
+    })
     
     # Create backend security event
     create_event(
@@ -153,6 +162,7 @@ def scan_website(input_url: str):
         "notification_access": notification_access,
         "cookie_usage": cookie_usage,
         "redirect_behavior": redirect_behavior,
+        "ai_summary": ai_summary,
         "download_links": download_links,
         "permission_note": (
             "No permission request detected on initial "
