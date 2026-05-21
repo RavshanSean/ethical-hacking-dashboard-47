@@ -10,14 +10,21 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { label: "Dashboard", href: "#dashboard", icon: <LayoutDashboard size={18} /> },
-  { label: "URL Scanner", href: "#scanner", icon: <Shield size={18} /> },
-  { label: "Live Monitor", href: "#live-monitor", icon: <Activity size={18} /> },
-  { label: "Logs", href: "#logs", icon: <ScrollText size={18} /> },
-  { label: "Analytics", href: "#analytics", icon: <BarChart3 size={18} /> },
-  { label: "Threat Map", href: "#threat-map", icon: <Globe size={18} /> },
-  { label: "File Scanner", href: "#file-scanner", icon: <FileWarning size={18} /> },
-  { label: "Settings", href: "#settings", icon: <Settings size={18} /> },
+  { label: "Dashboard", href: "/", icon: <LayoutDashboard size={18} /> },
+
+  { label: "URL Scanner", href: "/url-scanner", icon: <Shield size={18} /> },
+
+  { label: "Live Monitor", href: "/#live-monitor", icon: <Activity size={18} /> },
+
+  { label: "Logs", href: "/#logs", icon: <ScrollText size={18} /> },
+
+  { label: "Analytics", href: "/#analytics", icon: <BarChart3 size={18} /> },
+
+  { label: "Threat Map", href: "/threat-map", icon: <Globe size={18} /> },
+
+  { label: "File Scanner", href: "/file-scanner", icon: <FileWarning size={18} /> },
+
+  { label: "Settings", href: "/settings", icon: <Settings size={18} /> },
 ];
 
 export default function Sidebar() {
