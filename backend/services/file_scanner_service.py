@@ -36,6 +36,19 @@ EXECUTABLE_TYPES = [
     "ZIP/JAR/APK archive",
 ]
 
+SAFE_LOOKING_EXTENSIONS = [
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".xls",
+    ".xlsx",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".txt",
+]
+
 
 def detect_file_signature(file_bytes: bytes):
     if file_bytes.startswith(b"MZ"):
@@ -119,6 +132,16 @@ def analyze_file(filename: str, file_bytes: bytes):
     reasons = []
 
     lower_name = filename.lower()
+    
+    parts = lower_name.split(".")
+
+    has_double_extension = (
+        len(parts) >= 3
+        and any(
+            f".{parts[-2]}" == ext
+            for ext in SAFE_LOOKING_EXTENSIONS
+        )
+    )
 
     file_size = len(file_bytes)
 
@@ -133,6 +156,12 @@ def analyze_file(filename: str, file_bytes: bytes):
             reasons.append(
                 f"File has potentially dangerous extension: {extension}"
             )
+
+    if has_double_extension:
+        risk_score += 35
+        reasons.append(
+            "Filename appears to use a double-extension masquerading technique"
+        )
             
     if detected_file_type == "Windows executable" and not lower_name.endswith(".exe"):
         risk_score += 40
