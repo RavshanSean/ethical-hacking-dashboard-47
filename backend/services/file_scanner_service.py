@@ -18,7 +18,6 @@ DANGEROUS_EXTENSIONS = [
     ".rar",
 ]
 
-
 SUSPICIOUS_KEYWORDS = [
     "payload",
     "crack",
@@ -47,6 +46,24 @@ SAFE_LOOKING_EXTENSIONS = [
     ".png",
     ".gif",
     ".txt",
+]
+
+SUSPICIOUS_SCRIPT_PATTERNS = [
+    "powershell",
+    "-enc",
+    "-encodedcommand",
+    "invoke-webrequest",
+    "iwr ",
+    "curl ",
+    "wget ",
+    "downloadstring",
+    "new-object net.webclient",
+    "iex",
+    "frombase64string",
+    "start-process",
+    "bypass",
+    "hidden",
+    "nop",
 ]
 
 
@@ -126,12 +143,24 @@ def generate_file_ai_summary(scan_result: dict):
 
     return " ".join(summary_parts)
 
+def detect_script_patterns(file_bytes: bytes):
+    try:
+        text = file_bytes.decode("utf-8", errors="ignore").lower()
+    except Exception:
+        return []
+
+    matches = []
+
+    for pattern in SUSPICIOUS_SCRIPT_PATTERNS:
+        if pattern in text:
+            matches.append(pattern)
+
+    return matches
 
 def analyze_file(filename: str, file_bytes: bytes):
+    lower_name = filename.lower()
     risk_score = 0
     reasons = []
-
-    lower_name = filename.lower()
     
     parts = lower_name.split(".")
 
@@ -149,6 +178,7 @@ def analyze_file(filename: str, file_bytes: bytes):
     
     detected_file_type = detect_file_signature(file_bytes)
     entropy = calculate_entropy(file_bytes)
+    script_matches = detect_script_patterns(file_bytes)
 
     for extension in DANGEROUS_EXTENSIONS:
         if lower_name.endswith(extension):
@@ -182,6 +212,21 @@ def analyze_file(filename: str, file_bytes: bytes):
                 f"Filename contains suspicious keyword: {keyword}"
             )
 
+    if script_matches:
+        risk_score += min(len(script_matches) * 15, 60)
+        reasons.append(
+            "Suspicious script behavior detected: " + ", ".join(script_matches[:5])
+        )
+            
+    for part in parts[:-1]:
+        dangerous_part = f".{part}"
+
+        if dangerous_part in DANGEROUS_EXTENSIONS:
+            risk_score += 40
+            reasons.append(
+                f"Hidden dangerous extension detected inside filename: {dangerous_part}"
+            )
+
     if file_size == 0:
         risk_score += 20
         reasons.append("File is empty or unreadable")
@@ -213,6 +258,7 @@ def analyze_file(filename: str, file_bytes: bytes):
         "risk_score": risk_score,
         "threat_level": threat_level,
         "reasons": reasons,
+        "suspicious_script_patterns": script_matches,
         "scan_type": "Static file scan",
         "engine_version": "0.1.0",
         "status": "File scan complete",
