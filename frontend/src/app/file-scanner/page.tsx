@@ -1,5 +1,8 @@
 "use client";
 
+import { API_BASE_URL } from "@/config/api";
+import { useRef, useState } from "react";
+
 import Sidebar from "@/components/Sidebar";
 import {
   FileWarning,
@@ -28,6 +31,49 @@ const mockFindings = [
 ];
 
 export default function FileScannerPage() {
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [scanResult, setScanResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const reportRef = useRef<HTMLDivElement | null>(null);
+
+  async function scanFile() {
+  if (!selectedFile) return;
+
+  setLoading(true);
+  setError("");
+
+  const formData = new FormData();
+  formData.append("file", selectedFile);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/scan-file`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("File scan failed");
+      }
+
+      const data = await response.json();
+      setScanResult(data);
+
+      setTimeout(() => {
+        reportRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 100);
+
+    } catch {
+      setError("File scan failed. Please try another file.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#050816] text-white">
       <div className="flex">
@@ -153,10 +199,73 @@ export default function FileScannerPage() {
                     behavioral and signature analysis.
                   </p>
 
-                  <button className="mt-6 rounded-xl bg-orange-500 px-6 py-3 font-semibold text-black transition hover:bg-orange-400">
-                    Select File
+                  <input
+                    type="file"
+                    onChange={(event) =>
+                      setSelectedFile(event.target.files?.[0] || null)
+                    }
+                    className="mt-6 block w-full max-w-md rounded-xl border border-orange-500/20 bg-black p-3 text-sm text-gray-300"
+                  />
+
+                  <button
+                    onClick={scanFile}
+                    disabled={!selectedFile || loading}
+                    className="mt-4 rounded-xl bg-orange-500 px-6 py-3 font-semibold text-black transition hover:bg-orange-400 disabled:bg-gray-700 disabled:text-gray-400"
+                  >
+                    {loading ? "Scanning..." : "Scan File"}
                   </button>
                 </div>
+
+                  {error && (
+                  <div className="mt-5 rounded-xl border border-red-500/30 bg-black p-4 text-sm text-red-400">
+                    {error}
+                  </div>
+                )}
+
+                {scanResult && (
+                  <div
+                    ref={reportRef}
+                    className="mt-5 rounded-xl border border-orange-500/20 bg-black p-5"
+                  >
+                    <h3 className="text-lg font-bold text-orange-300">
+                      File Scan Report
+                    </h3>
+
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-300">
+                      <p>Filename: {scanResult.filename}</p>
+                      <p>Entropy: {scanResult.entropy}</p>
+                      <p>Type: {scanResult.detected_file_type}</p>
+                      <p>Risk: {scanResult.risk_score}/100</p>
+                      <p>Threat: {scanResult.threat_level}</p>
+                      <p>Size: {scanResult.file_size} bytes</p>
+                      <p>Engine: {scanResult.engine_version}</p>
+                    </div>
+
+                    <div className="mt-4 rounded-lg border border-orange-500/10 bg-[#050816] p-3">
+                      <p className="text-xs text-gray-500">
+                        SHA256
+                      </p>
+                      <p className="mt-1 break-all text-xs text-orange-200">
+                        {scanResult.sha256}
+                      </p>
+                    </div>
+
+                    <div className="mt-4">
+                      <p className="font-semibold text-orange-300">
+                        Reasons
+                      </p>
+
+                      <ul className="mt-2 space-y-1 text-sm text-gray-300">
+                        {scanResult.reasons.map(
+                          (reason: string, index: number) => (
+                            <li key={index}>• {reason}</li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
               </div>
 
               <div className="rounded-2xl border border-green-500/20 bg-[#0b1220] p-6">

@@ -1,4 +1,6 @@
 import hashlib
+import math
+from collections import Counter
 
 
 DANGEROUS_EXTENSIONS = [
@@ -29,6 +31,11 @@ SUSPICIOUS_KEYWORDS = [
     "inject",
 ]
 
+EXECUTABLE_TYPES = [
+    "Windows executable",
+    "ZIP/JAR/APK archive",
+]
+
 
 def detect_file_signature(file_bytes: bytes):
     if file_bytes.startswith(b"MZ"):
@@ -52,6 +59,21 @@ def detect_file_signature(file_bytes: bytes):
     return "Unknown file type"
 
 
+def calculate_entropy(file_bytes: bytes):
+    if not file_bytes:
+        return 0
+
+    byte_counts = Counter(file_bytes)
+
+    entropy = 0
+
+    for count in byte_counts.values():
+        probability = count / len(file_bytes)
+        entropy -= probability * math.log2(probability)
+
+    return round(entropy, 2)
+
+
 def analyze_file(filename: str, file_bytes: bytes):
     risk_score = 0
     reasons = []
@@ -63,6 +85,7 @@ def analyze_file(filename: str, file_bytes: bytes):
     sha256_hash = hashlib.sha256(file_bytes).hexdigest()
     
     detected_file_type = detect_file_signature(file_bytes)
+    entropy = calculate_entropy(file_bytes)
 
     for extension in DANGEROUS_EXTENSIONS:
         if lower_name.endswith(extension):
@@ -75,6 +98,12 @@ def analyze_file(filename: str, file_bytes: bytes):
         risk_score += 40
         reasons.append(
             "File content appears to be a Windows executable but extension does not match"
+        )
+        
+    if entropy > 7.2 and detected_file_type in EXECUTABLE_TYPES:
+        risk_score += 25
+        reasons.append(
+            f"High entropy detected ({entropy}) — executable may be packed or encrypted"
         )
 
     for keyword in SUSPICIOUS_KEYWORDS:
@@ -106,6 +135,7 @@ def analyze_file(filename: str, file_bytes: bytes):
 
     return {
         "detected_file_type": detected_file_type,
+        "entropy": entropy,
         "filename": filename,
         "file_size": file_size,
         "sha256": sha256_hash,
