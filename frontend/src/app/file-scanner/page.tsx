@@ -250,6 +250,18 @@ export default function FileScannerPage() {
                       </p>
                     </div>
 
+                    {scanResult.ai_summary && (
+                      <div className="mt-4 rounded-lg border border-purple-500/20 bg-purple-500/10 p-4">
+                        <p className="font-semibold text-purple-300">
+                          AI File Analysis
+                        </p>
+
+                        <p className="mt-2 text-sm leading-7 text-gray-300">
+                          {scanResult.ai_summary}
+                        </p>
+                      </div>
+                    )}
+
                     <div className="mt-4">
                       <p className="font-semibold text-orange-300">
                         Reasons

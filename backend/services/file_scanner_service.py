@@ -74,6 +74,46 @@ def calculate_entropy(file_bytes: bytes):
     return round(entropy, 2)
 
 
+def generate_file_ai_summary(scan_result: dict):
+    filename = scan_result.get("filename", "Unknown file")
+    file_type = scan_result.get("detected_file_type", "Unknown file type")
+    threat_level = scan_result.get("threat_level", "UNKNOWN")
+    risk_score = scan_result.get("risk_score", 0)
+    entropy = scan_result.get("entropy", 0)
+    reasons = scan_result.get("reasons", [])
+
+    summary_parts = []
+
+    if threat_level == "HIGH":
+        summary_parts.append(
+            f"{filename} appears highly suspicious based on the current static file analysis."
+        )
+    elif threat_level == "MEDIUM":
+        summary_parts.append(
+            f"{filename} shows moderate-risk indicators and should be reviewed before opening."
+        )
+    else:
+        summary_parts.append(
+            f"{filename} appears low risk based on the current static file scan."
+        )
+
+    summary_parts.append(
+        f"The detected file type is {file_type}, with a risk score of {risk_score}/100."
+    )
+
+    if entropy > 7.2:
+        summary_parts.append(
+            f"The file has high entropy ({entropy}), which can sometimes indicate compression, packing, encryption, or obfuscation."
+        )
+
+    if reasons:
+        summary_parts.append(
+            "Key indicators include: " + ", ".join(reasons[:3]) + "."
+        )
+
+    return " ".join(summary_parts)
+
+
 def analyze_file(filename: str, file_bytes: bytes):
     risk_score = 0
     reasons = []
@@ -132,8 +172,10 @@ def analyze_file(filename: str, file_bytes: bytes):
         threat_level = "MEDIUM"
     else:
         threat_level = "LOW"
+        
+        
 
-    return {
+    scan_result = {
         "detected_file_type": detected_file_type,
         "entropy": entropy,
         "filename": filename,
@@ -146,3 +188,7 @@ def analyze_file(filename: str, file_bytes: bytes):
         "engine_version": "0.1.0",
         "status": "File scan complete",
     }
+
+    scan_result["ai_summary"] = generate_file_ai_summary(scan_result)
+
+    return scan_result
