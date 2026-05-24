@@ -120,12 +120,16 @@ def detect_script_patterns(file_bytes: bytes):
     return matches
 
 
-def inspect_zip_contents(file_bytes: bytes):
+def inspect_zip_contents(file_bytes: bytes, depth: int = 0, max_depth: int = 2):
     findings = []
+
+    if depth > max_depth:
+        return findings
 
     try:
         with zipfile.ZipFile(BytesIO(file_bytes)) as archive:
-            for name in archive.namelist():
+            for info in archive.infolist():
+                name = info.filename
                 lower_name = name.lower()
 
                 for extension in DANGEROUS_EXTENSIONS:
@@ -141,7 +145,44 @@ def inspect_zip_contents(file_bytes: bytes):
                         f"Archive contains file with multiple extensions: {name}"
                     )
 
-    except zipfile.BadZipFile:
+                if info.file_size <= 1024 * 1024:
+                    inner_bytes = archive.read(name)
+
+                    inner_type = detect_file_signature(inner_bytes)
+
+                    if inner_type == "Windows executable":
+                        findings.append(
+                            f"Archive contains Windows executable content: {name}"
+                        )
+
+                    inner_script_matches = detect_script_patterns(inner_bytes)
+
+                    if inner_script_matches:
+                        findings.append(
+                            "Archive contains suspicious script behavior in "
+                            f"{name}: {', '.join(inner_script_matches[:5])}"
+                        )
+
+                    if inner_type == "ZIP/JAR/APK archive":
+                        findings.append(
+                            f"Nested archive detected inside ZIP: {name}"
+                        )
+
+                        nested_findings = inspect_zip_contents(
+                            inner_bytes,
+                            depth=depth + 1,
+                            max_depth=max_depth,
+                        )
+
+                        findings.extend(
+                            [
+                                f"Nested archive finding: {finding}"
+                                for finding in nested_findings[:5]
+                            ]
+                        )
+
+    except Exception as error:
+        print("ZIP inspection error:", error)
         return []
 
     return findings
