@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-
+from services.event_service import create_event
 from services.file_scanner_service import analyze_file
 
 router = APIRouter()
@@ -20,6 +20,16 @@ async def scan_file(file: UploadFile = File(...)):
     result = analyze_file(
         filename=file.filename,
         file_bytes=file_bytes,
+    )
+    
+    create_event(
+        event_type="FILE_SCAN",
+        severity=result["threat_level"],
+        message=(
+            f"File scan completed: "
+            f"{result['filename']} "
+            f"(Risk {result['risk_score']}/100)"
+        ),
     )
 
     return result

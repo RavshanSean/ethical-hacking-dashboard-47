@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import {
   Globe,
@@ -8,30 +9,34 @@ import {
   Activity,
 } from "lucide-react";
 
-const mockThreats = [
-  {
-    country: "Russia",
-    type: "Phishing Activity",
-    level: "HIGH",
-  },
-  {
-    country: "China",
-    type: "Botnet Traffic",
-    level: "MEDIUM",
-  },
-  {
-    country: "Germany",
-    type: "Credential Stuffing",
-    level: "LOW",
-  },
-  {
-    country: "Brazil",
-    type: "Malware Beacon",
-    level: "HIGH",
-  },
-];
-
 export default function ThreatMapPage() {
+  const [threats, setThreats] = useState<any[]>([]);
+  const highThreats =
+  threats.filter(
+    (t) => t.severity === "HIGH"
+  ).length;
+
+  const activeIncidents =
+    threats.length;
+
+  const regionsMonitored =
+    new Set(
+      threats.map((t) => t.country)
+    ).size;
+
+  const telemetryNodes =
+    threats.length;
+
+    useEffect(() => {
+    fetch("http://127.0.0.1:8000/threat-map/events")
+      .then((response) => response.json())
+      .then((data) => {
+        setThreats(data);
+      })
+      .catch((error) => {
+        console.error("Threat map fetch error:", error);
+      });
+  }, []);
   return (
     <div className="min-h-screen bg-[#050816] text-white">
       <div className="flex">
@@ -81,7 +86,7 @@ export default function ThreatMapPage() {
                 </div>
 
                 <p className="mt-4 text-4xl font-bold text-red-400">
-                  12
+                  {highThreats}
                 </p>
               </div>
 
@@ -95,7 +100,7 @@ export default function ThreatMapPage() {
                 </div>
 
                 <p className="mt-4 text-4xl font-bold text-yellow-300">
-                  34
+                  {activeIncidents}
                 </p>
               </div>
 
@@ -109,7 +114,7 @@ export default function ThreatMapPage() {
                 </div>
 
                 <p className="mt-4 text-4xl font-bold text-green-400">
-                  89
+                  {regionsMonitored}
                 </p>
               </div>
 
@@ -123,7 +128,7 @@ export default function ThreatMapPage() {
                 </div>
 
                 <p className="mt-4 text-4xl font-bold text-cyan-300">
-                  241
+                  {telemetryNodes}
                 </p>
               </div>
             </div>
@@ -145,15 +150,36 @@ export default function ThreatMapPage() {
                   <div className="h-full w-full bg-[linear-gradient(rgba(0,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.08)_1px,transparent_1px)] bg-[size:40px_40px]" />
                 </div>
 
-                <div className="absolute left-[18%] top-[30%] h-4 w-4 rounded-full bg-red-500 shadow-[0_0_20px_rgba(255,0,0,0.9)] animate-ping" />
+                {threats.map((threat) => {
+                  const x =
+                    ((threat.longitude + 180) / 360) * 100;
 
-                <div className="absolute left-[52%] top-[22%] h-4 w-4 rounded-full bg-yellow-300 shadow-[0_0_20px_rgba(255,255,0,0.9)] animate-ping" />
+                  const y =
+                    ((90 - threat.latitude) / 180) * 100;
 
-                <div className="absolute left-[74%] top-[38%] h-4 w-4 rounded-full bg-green-400 shadow-[0_0_20px_rgba(0,255,120,0.9)] animate-ping" />
-
-                <div className="absolute left-[35%] top-[65%] h-4 w-4 rounded-full bg-cyan-400 shadow-[0_0_20px_rgba(0,255,255,0.9)] animate-ping" />
-
-                <div className="absolute left-[60%] top-[70%] h-4 w-4 rounded-full bg-red-500 shadow-[0_0_20px_rgba(255,0,0,0.9)] animate-ping" />
+                  return (
+                    <div
+                      key={threat.id}
+                      className={`absolute h-4 w-4 rounded-full animate-ping ${
+                        threat.severity === "HIGH"
+                          ? "bg-red-500"
+                          : threat.severity === "MEDIUM"
+                          ? "bg-yellow-300"
+                          : "bg-green-400"
+                      }`}
+                      style={{
+                        left: `${x}%`,
+                        top: `${y}%`,
+                        boxShadow:
+                          threat.severity === "HIGH"
+                            ? "0 0 20px rgba(255,0,0,0.9)"
+                            : threat.severity === "MEDIUM"
+                            ? "0 0 20px rgba(255,255,0,0.9)"
+                            : "0 0 20px rgba(0,255,120,0.9)",
+                      }}
+                    />
+                  );
+                })}
 
                 <svg className="absolute inset-0 h-full w-full">
                   <line
@@ -225,7 +251,7 @@ export default function ThreatMapPage() {
                 </div>
 
                 <div className="mt-5 space-y-4">
-                  {mockThreats.map((threat, index) => (
+                  {threats.map((threat, index) => (
                     <div
                       key={index}
                       className="rounded-xl border border-green-500/10 bg-black p-4"
@@ -237,19 +263,19 @@ export default function ThreatMapPage() {
 
                         <span
                           className={`text-xs font-bold ${
-                            threat.level === "HIGH"
+                            threat.severity === "HIGH"
                               ? "text-red-400"
-                              : threat.level === "MEDIUM"
+                              : threat.severity === "MEDIUM"
                               ? "text-yellow-300"
                               : "text-green-400"
                           }`}
                         >
-                          {threat.level}
+                          {threat.severity}
                         </span>
                       </div>
 
                       <p className="mt-2 text-sm text-gray-400">
-                        {threat.type}
+                        {threat.threat_type}
                       </p>
                     </div>
                   ))}

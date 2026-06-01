@@ -4,16 +4,9 @@ from routes.event_routes import router as event_router
 from routes.stats_routes import router as stats_router
 from routes.scan_result_routes import router as scan_result_router
 from routes.file_routes import router as file_router
-# FastAPI framework
+from routes.threat_map_routes import router as threat_map_router
 from fastapi import FastAPI
-
-# Allows frontend to talk to backend
 from fastapi.middleware.cors import CORSMiddleware
-
-# Data validation for incoming JSON
-
-# Import our scanner engine
-
 from db.database import Base, engine
 from db import models
 
@@ -25,13 +18,11 @@ app.include_router(stats_router)
 app.include_router(websocket_router)
 app.include_router(scan_result_router)
 app.include_router(file_router)
+app.include_router(threat_map_router)
+
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
-
-# CORS configuration
-# Allows frontend running on localhost:3000
-# to make requests to backend
 app.add_middleware(
     CORSMiddleware,
 
@@ -46,14 +37,6 @@ app.add_middleware(
 
     allow_headers=["*"],
 )
-
-
-# Incoming JSON structure
-# Example:
-# {
-#   "url": "https://instagram.com"
-# }
-
 
 # Simple test route
 @app.get("/")
