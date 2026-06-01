@@ -139,6 +139,16 @@ def inspect_zip_contents(
     try:
         with zipfile.ZipFile(BytesIO(file_bytes)) as archive:
             archive_entries = archive.infolist()
+            encrypted_files = [
+                info.filename
+                for info in archive_entries
+                if info.flag_bits & 0x1
+            ]
+            
+            if encrypted_files:
+                findings.append(
+                    f"Archive contains password-protected files: {len(encrypted_files)}"
+                )
 
             if len(archive_entries) > MAX_ZIP_FILES:
                 findings.append(
