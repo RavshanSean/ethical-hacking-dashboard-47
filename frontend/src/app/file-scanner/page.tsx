@@ -275,6 +275,44 @@ export default function FileScannerPage() {
                         )}
                       </ul>
                     </div>
+                    {scanResult.archive_findings?.length > 0 && (
+                      <div className="mt-6">
+                        <h3 className="text-orange-400 font-semibold mb-2">
+                          Archive Findings
+                        </h3>
+
+                        <ul className="space-y-2 text-sm text-orange-200">
+                          {scanResult.archive_findings.map(
+                            (finding: string, index: number) => (
+                              <li key={index}>
+                                • {finding}
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    )}
+
+                    {scanResult.suspicious_script_patterns?.length > 0 && (
+                      <div className="mt-6">
+                        <h3 className="text-red-400 font-semibold mb-2">
+                          Suspicious Script Patterns
+                        </h3>
+
+                        <div className="flex flex-wrap gap-2">
+                          {scanResult.suspicious_script_patterns.map(
+                            (pattern: string, index: number) => (
+                              <span
+                                key={index}
+                                className="px-3 py-1 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs"
+                              >
+                                {pattern}
+                              </span>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

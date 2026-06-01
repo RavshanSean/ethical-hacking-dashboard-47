@@ -68,6 +68,11 @@ SUSPICIOUS_SCRIPT_PATTERNS = [
     "nop",
 ]
 
+MAX_ZIP_FILES = 100
+MAX_ZIP_UNCOMPRESSED_SIZE = 20 * 1024 * 1024
+MAX_INNER_FILE_READ_SIZE = 1024 * 1024
+MAX_RECURSION_DEPTH = 2
+
 
 def detect_file_signature(file_bytes: bytes):
     if file_bytes.startswith(b"MZ"):
@@ -120,15 +125,41 @@ def detect_script_patterns(file_bytes: bytes):
     return matches
 
 
-def inspect_zip_contents(file_bytes: bytes, depth: int = 0, max_depth: int = 2):
+def inspect_zip_contents(
+    file_bytes: bytes,
+    depth: int = 0,
+    max_depth: int = MAX_RECURSION_DEPTH,
+):
     findings = []
 
     if depth > max_depth:
+        findings.append("Maximum archive recursion depth reached")
         return findings
 
     try:
         with zipfile.ZipFile(BytesIO(file_bytes)) as archive:
-            for info in archive.infolist():
+            archive_entries = archive.infolist()
+
+            if len(archive_entries) > MAX_ZIP_FILES:
+                findings.append(
+                    f"Archive contains too many files: {len(archive_entries)}"
+                )
+                return findings
+
+            total_uncompressed_size = sum(
+                info.file_size for info in archive_entries
+            )
+
+            if total_uncompressed_size > MAX_ZIP_UNCOMPRESSED_SIZE:
+                findings.append(
+                    "Archive uncompressed size exceeds safe scanning limit"
+                )
+                return findings
+
+            for info in archive_entries:
+                if info.is_dir():
+                    continue
+
                 name = info.filename
                 lower_name = name.lower()
 
@@ -145,7 +176,7 @@ def inspect_zip_contents(file_bytes: bytes, depth: int = 0, max_depth: int = 2):
                         f"Archive contains file with multiple extensions: {name}"
                     )
 
-                if info.file_size <= 1024 * 1024:
+                if info.file_size <= MAX_INNER_FILE_READ_SIZE:
                     inner_bytes = archive.read(name)
 
                     inner_type = detect_file_signature(inner_bytes)
@@ -180,6 +211,10 @@ def inspect_zip_contents(file_bytes: bytes, depth: int = 0, max_depth: int = 2):
                                 for finding in nested_findings[:5]
                             ]
                         )
+                else:
+                    findings.append(
+                        f"Archive file skipped because it exceeds inner scan limit: {name}"
+                    )
 
     except Exception as error:
         print("ZIP inspection error:", error)
@@ -309,9 +344,9 @@ def analyze_file(filename: str, file_bytes: bytes):
         risk_score += 20
         reasons.append("File is empty or unreadable")
 
-    if file_size > 10 * 1024 * 1024:
+    if file_size > 25 * 1024 * 1024:
         risk_score += 10
-        reasons.append("File is larger than 10MB")
+        reasons.append("File is larger than 25MB")
 
     if len(reasons) == 0:
         reasons.append("No obvious suspicious file indicators detected")
