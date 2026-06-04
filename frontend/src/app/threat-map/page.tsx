@@ -37,6 +37,40 @@ export default function ThreatMapPage() {
         console.error("Threat map fetch error:", error);
       });
   }, []);
+
+    useEffect(() => {
+      const socket = new WebSocket("ws://127.0.0.1:8000/ws/events");
+
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        const liveThreat = {
+          id: Date.now(),
+          country: "United States",
+          city: "New York",
+          latitude: 40.7128,
+          longitude: -74.006,
+          threat_type: data.type,
+          severity: data.severity,
+          message: data.message,
+          timestamp: data.timestamp,
+        };
+
+        setThreats((previousThreats) => [
+          liveThreat,
+          ...previousThreats.slice(0, 9),
+        ]);
+      };
+
+      socket.onerror = (error) => {
+        console.warn("Threat map websocket error:", error);
+      };
+
+      return () => {
+        socket.close();
+      };
+    }, []);
+
   return (
     <div className="min-h-screen bg-[#050816] text-white">
       <div className="flex">

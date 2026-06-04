@@ -1,7 +1,9 @@
 from fastapi import APIRouter
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 
 from services.scanner_service import scan_website
+from services.event_service import create_event
 
 
 router = APIRouter()
@@ -12,6 +14,21 @@ class UrlRequest(BaseModel):
 
 
 @router.post("/scan-url")
-def scan_url(request: UrlRequest):
+async def scan_url(request: UrlRequest):
 
-    return scan_website(request.url)
+    result = await run_in_threadpool(
+        scan_website,
+        request.url,
+    )
+
+    create_event(
+        event_type="SCAN",
+        severity=result["threat_level"],
+        message=(
+            f"URL scan completed for "
+            f"{result['domain']} "
+            f"with {result['threat_level']} risk"
+        ),
+    )
+
+    return result
