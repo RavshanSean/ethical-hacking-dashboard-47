@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 from db.database import Base
 
 
@@ -59,3 +59,19 @@ class ScanResult(Base):
     analysis_source = Column(String)
 
     created_at = Column(String)
+    
+    
+class AppSettings(Base):
+    __tablename__ = "app_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    max_file_size = Column(Integer, default=25)
+
+    max_archive_depth = Column(Integer, default=2)
+
+    zip_inspection = Column(Boolean, default=True)
+
+    ai_analysis = Column(Boolean, default=True)
+
+    websocket_enabled = Column(Boolean, default=True)
