@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from db.database import Base, engine
 from db import models
 from routes.settings_routes import router as settings_router
+from routes.auth_routes import router as auth_router 
 
 # Create FastAPI app
 app = FastAPI()
@@ -21,6 +22,7 @@ app.include_router(scan_result_router)
 app.include_router(file_router)
 app.include_router(threat_map_router)
 app.include_router(settings_router)
+app.include_router(auth_router)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
