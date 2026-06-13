@@ -16,12 +16,16 @@ password_context = CryptContext(
 
 
 def hash_password(password: str):
-    return password_context.hash(password)
+    safe_password = password[:72]
+
+    return password_context.hash(safe_password)
 
 
 def verify_password(plain_password: str, hashed_password: str):
+    safe_password = plain_password[:72]
+
     return password_context.verify(
-        plain_password,
+        safe_password,
         hashed_password,
     )
 
