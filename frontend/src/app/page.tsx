@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
 import EventHistory from "@/components/EventHistory";
 import LiveMonitor from "../components/LiveMonitor";
 import ThreatActivity from "../components/ThreatActivity";
@@ -16,7 +19,30 @@ type ScanHistoryItem = {
 };
 
 export default function Home() {
+  const router = useRouter();
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    setLoading(false);
+  }, [router]);
+
   const scanHistory: ScanHistoryItem[] = [];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#050816] flex items-center justify-center text-white">
+        Checking authentication...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#050816] text-white">
