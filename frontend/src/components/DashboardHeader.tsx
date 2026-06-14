@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search, ShieldCheck, LogOut, UserCircle } from "lucide-react";
+import { Bell, LogOut, Search, ShieldCheck, UserCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function DashboardHeader() {
@@ -13,59 +13,63 @@ export default function DashboardHeader() {
   }
 
   return (
-    <header className="mb-8 flex flex-col gap-4 rounded-2xl border border-green-500/20 bg-[#0b1220]/80 p-5 shadow-[0_0_40px_rgba(34,197,94,0.08)] lg:flex-row lg:items-center lg:justify-between">
-      <div>
-        <p className="text-sm tracking-widest text-green-400 uppercase">
-          Security Platform
-        </p>
+    <header className="mb-8 overflow-hidden rounded-[22px] border border-cyan-400/10 bg-[#050b16] shadow-[0_0_45px_rgba(0,255,220,0.05)]">
+      <div className="flex flex-col gap-6 border-b border-white/5 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.42em] text-cyan-300">
+            Security Platform
+          </p>
 
-        <h1 className="mt-2 text-4xl font-bold text-white">
-          Ethical Hacking Dashboard #47
-        </h1>
+          <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">
+            Ethical Hacking Dashboard #47
+          </h1>
 
-        <p className="mt-2 text-gray-400">
-          Scan URLs, analyze web behavior, and detect suspicious indicators.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="hidden items-center gap-2 rounded-xl border border-green-500/20 bg-black px-4 py-3 text-gray-400 md:flex">
-          <Search size={18} />
-          <span className="text-sm">Search threats...</span>
+          <p className="mt-2 text-sm text-slate-400">
+            Scan URLs, analyze web behavior, and detect suspicious indicators.
+          </p>
         </div>
 
-        <button className="relative rounded-xl border border-green-500/20 bg-black p-3 text-green-400 transition hover:border-green-400 hover:shadow-[0_0_20px_rgba(34,197,94,0.25)]">
-          <Bell size={20} />
-          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-            3
-          </span>
-        </button>
-
-        <div className="flex items-center gap-2 rounded-xl border border-green-500/20 bg-black px-4 py-3">
-          <ShieldCheck className="text-green-400" size={20} />
-          <div>
-            <p className="text-xs text-gray-500">Protection</p>
-            <p className="text-sm font-bold text-green-400">Online</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 rounded-xl border border-green-500/20 bg-black px-4 py-3">
-          <UserCircle className="text-green-400" size={28} />
-
-          <div>
-            <p className="text-sm font-bold text-white">Sean</p>
-            <p className="text-xs text-green-400">Pro Plan</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="hidden min-w-[260px] items-center gap-3 rounded-xl border border-white/10 bg-black/50 px-4 py-3 text-slate-400 shadow-inner md:flex">
+            <Search size={18} className="text-cyan-300" />
+            <span className="text-sm">Search threats...</span>
           </div>
 
-          <button
-            onClick={handleLogout}
-            className="ml-2 rounded-lg border border-red-500/20 bg-red-500/10 p-2 text-red-400 transition hover:bg-red-500 hover:text-white"
-            title="Logout"
-          >
-            <LogOut size={17} />
+          <button className="relative rounded-xl border border-white/10 bg-black/50 p-3 text-cyan-300 transition hover:border-cyan-300/50 hover:shadow-[0_0_25px_rgba(34,211,238,0.18)]">
+            <Bell size={20} />
+            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow-[0_0_18px_rgba(239,68,68,0.7)]">
+              3
+            </span>
           </button>
+
+          <div className="flex items-center gap-3 rounded-xl border border-emerald-400/15 bg-black/50 px-4 py-3">
+            <ShieldCheck className="text-emerald-400" size={21} />
+            <div>
+              <p className="text-xs text-slate-500">Protection</p>
+              <p className="text-sm font-bold text-emerald-400">Online</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-xl border border-cyan-400/15 bg-black/50 px-4 py-3">
+            <UserCircle className="text-cyan-300" size={30} />
+
+            <div>
+              <p className="text-sm font-semibold text-white">Sean</p>
+              <p className="text-xs text-emerald-400">Pro Plan</p>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="ml-2 rounded-lg border border-red-400/20 bg-red-500/10 p-2 text-red-300 transition hover:border-red-300/50 hover:bg-red-500/20 hover:text-red-200"
+              title="Logout"
+            >
+              <LogOut size={17} />
+            </button>
+          </div>
         </div>
       </div>
+
+      <div className="h-px bg-gradient-to-r from-transparent via-cyan-300/40 to-transparent" />
     </header>
   );
 }

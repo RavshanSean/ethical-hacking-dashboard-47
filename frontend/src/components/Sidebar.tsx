@@ -1,3 +1,8 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 import {
   LayoutDashboard,
   Shield,
@@ -7,58 +12,138 @@ import {
   Settings,
   BarChart3,
   ScrollText,
+  Monitor,
+  Bug,
+  Network,
+  Lock,
+  Box,
 } from "lucide-react";
 
-const navItems = [
-  { label: "Dashboard", href: "/", icon: <LayoutDashboard size={18} /> },
-
-  { label: "URL Scanner", href: "/url-scanner", icon: <Shield size={18} /> },
-
-  { label: "Live Monitor", href: "/#live-monitor", icon: <Activity size={18} /> },
-
-  { label: "Logs", href: "/#logs", icon: <ScrollText size={18} /> },
-
-  { label: "Analytics", href: "/#analytics", icon: <BarChart3 size={18} /> },
-
-  { label: "Threat Map", href: "/threat-map", icon: <Globe size={18} /> },
-
-  { label: "File Scanner", href: "/file-scanner", icon: <FileWarning size={18} /> },
-
-  { label: "Settings", href: "/settings", icon: <Settings size={18} /> },
+const navGroups = [
+  {
+    title: "",
+    items: [{ label: "Dashboard", href: "/", icon: LayoutDashboard }],
+  },
+  {
+    title: "Scan",
+    items: [
+      { label: "URL Scanner", href: "/url-scanner", icon: Shield },
+      { label: "File Scanner", href: "/file-scanner", icon: FileWarning },
+      { label: "System Scan", href: "#", icon: Monitor },
+      { label: "Vulnerability Scan", href: "#", icon: Bug },
+    ],
+  },
+  {
+    title: "Monitor",
+    items: [
+      { label: "Live Monitor", href: "/live-monitor", icon: Activity },
+      { label: "Processes", href: "#", icon: BarChart3 },
+      { label: "Network", href: "#", icon: Network },
+      { label: "Browser Protection", href: "#", icon: Lock },
+    ],
+  },
+  {
+    title: "Tools",
+    items: [
+      { label: "Quarantine", href: "#", icon: Box },
+      { label: "Logs", href: "/logs", icon: ScrollText },
+      { label: "Reports", href: "/analytics", icon: BarChart3 },
+      { label: "Threat Map", href: "/threat-map", icon: Globe },
+      { label: "Settings", href: "/settings", icon: Settings },
+    ],
+  },
 ];
-
 export default function Sidebar() {
+  const pathname = usePathname();
+  const sidebarRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const savedScroll = sessionStorage.getItem("sidebar-scroll");
+
+    if (sidebarRef.current && savedScroll) {
+      sidebarRef.current.scrollTop = Number(savedScroll);
+    }
+  }, []);
+
+  function saveSidebarScroll() {
+    if (!sidebarRef.current) return;
+
+    sessionStorage.setItem(
+      "sidebar-scroll",
+      String(sidebarRef.current.scrollTop)
+    );
+  }
+
   return (
-    <aside className="sticky top-0 h-screen w-64 shrink-0 overflow-y-auto border-r border-green-500/20 bg-[#081018] p-5">
+    <aside ref={sidebarRef} className="sticky top-0 h-screen w-64 shrink-0 overflow-y-auto border-r border-cyan-400/10 bg-[#020711] px-5 py-7">
       <div>
-        <p className="text-green-400 text-sm tracking-widest uppercase">
+        <p className="text-xs uppercase tracking-[0.42em] text-cyan-300">
           Security Core
         </p>
 
-        <h1 className="mt-2 text-2xl font-bold text-white">
+        <h1 className="mt-4 text-3xl font-bold tracking-tight text-white">
           EHD #47
         </h1>
       </div>
 
-      <nav className="mt-10 space-y-2">
-        {navItems.map((item) => (
-          <a
-            key={item.label}
-            href={item.href}
-            className="flex items-center gap-3 rounded-xl px-4 py-3 text-gray-400 transition hover:bg-green-500/10 hover:text-green-400 hover:border hover:border-green-500/20"
-          >
-            {item.icon}
-            <span className="font-medium">{item.label}</span>
-          </a>
+      <nav className="mt-10 space-y-8">
+        {navGroups.map((group) => (
+          <div key={group.title || "main"}>
+            {group.title && (
+              <p className="mb-3 px-4 text-xs uppercase tracking-[0.28em] text-slate-600">
+                {group.title}
+              </p>
+            )}
+
+            <div className="space-y-1.5">
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const active = item.href !== "#" && pathname === item.href;
+
+                return (
+                  <Link
+                      key={item.label}
+                      href={item.href}
+                      onClick={(event) => {
+                        if (item.href === "#") {
+                          event.preventDefault();
+                          return;
+                        }
+
+                        saveSidebarScroll();
+                      }}
+                    className={`group flex items-center gap-4 rounded-xl border px-4 py-3 transition ${
+                      active
+                        ? "border-cyan-400/20 bg-cyan-400/10 text-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.08)]"
+                        : "border-transparent text-slate-400 hover:border-cyan-400/10 hover:bg-white/[0.03] hover:text-cyan-200"
+                    }`}
+                  >
+                    <Icon
+                      size={18}
+                      className={
+                        active
+                          ? "text-cyan-300"
+                          : "text-slate-500 group-hover:text-cyan-300"
+                      }
+                    />
+
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         ))}
       </nav>
 
-      <div className="mt-10 rounded-xl border border-green-500/20 bg-black p-4">
-        <p className="text-gray-400 text-sm">System Status</p>
+      <div className="mt-10 rounded-2xl border border-cyan-400/10 bg-black/45 p-4 shadow-[0_0_28px_rgba(0,255,220,0.04)]">
+        <p className="text-xs uppercase tracking-[0.25em] text-slate-500">
+          System Status
+        </p>
 
-        <div className="mt-3 flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-green-400 animate-pulse" />
-          <p className="text-green-400 font-bold">Operational</p>
+        <div className="mt-4 flex items-center gap-2">
+          <div className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_14px_rgba(52,211,153,0.8)]" />
+          <p className="text-sm font-semibold text-emerald-400">Operational</p>
         </div>
       </div>
     </aside>
