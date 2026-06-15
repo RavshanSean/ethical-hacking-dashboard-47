@@ -153,7 +153,7 @@ function StatCard({
             {title}
           </p>
 
-          <h3 className={`mt-4 text-3xl font-bold ${style.text}`}>
+          <h3 className={`mt-4 text-3xl font-medium ${style.text}`}>
             {value}
           </h3>
 

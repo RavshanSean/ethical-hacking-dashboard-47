@@ -84,7 +84,7 @@ export default function ThreatMapClient() {
               positions={line}
               pathOptions={{
                 color: "#dc2626",
-                weight: 1.2,
+                weight: 0.8,
                 opacity: 0.55,
               }}
             />
@@ -116,7 +116,7 @@ export default function ThreatMapClient() {
                   fillColor: color,
                   fillOpacity: 0.12,
                   opacity: 0.45,
-                  weight: 1,
+                  weight: 0.8,
                 }}
               />
 
@@ -128,7 +128,7 @@ export default function ThreatMapClient() {
                   fillColor: color,
                   fillOpacity: 1,
                   opacity: 1,
-                  weight: 1,
+                  weight: 0.8,
                 }}
               >
                 <Popup>

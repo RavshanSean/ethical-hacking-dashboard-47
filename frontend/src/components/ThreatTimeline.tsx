@@ -62,22 +62,41 @@ export default function ThreatTimeline() {
       <div className="h-72 sm:h-80 lg:h-[350px] w-full min-w-0">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={timeline}>
-            <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+            <CartesianGrid strokeDasharray="3 3" opacity={0.12} />
 
             <XAxis
               dataKey="time"
               tick={{ fontSize: 12 }}
             />
 
-            <YAxis />
+            <YAxis tick={{ fontSize: 12, fontWeight: 400 }} />
 
-            <Tooltip />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "#020711",
+                border: "1px solid rgba(34, 211, 238, 0.18)",
+                borderRadius: "12px",
+                color: "#cbd5e1",
+                fontSize: "12px",
+                fontWeight: 400,
+                boxShadow: "0 0 25px rgba(34, 211, 238, 0.08)",
+              }}
+              labelStyle={{
+                color: "#67e8f9",
+                fontSize: "12px",
+                fontWeight: 500,
+              }}
+              itemStyle={{
+                fontSize: "12px",
+                fontWeight: 400,
+              }}
+            />
 
             <Line
               type="monotone"
               dataKey="total"
               stroke="#22c55e"
-              strokeWidth={3}
+              strokeWidth={1.2}
               dot={false}
             />
 
@@ -85,7 +104,7 @@ export default function ThreatTimeline() {
               type="monotone"
               dataKey="high"
               stroke="#ef4444"
-              strokeWidth={2}
+              strokeWidth={1.2}
               dot={false}
             />
 
@@ -93,7 +112,7 @@ export default function ThreatTimeline() {
               type="monotone"
               dataKey="medium"
               stroke="#facc15"
-              strokeWidth={2}
+              strokeWidth={1.2}
               dot={false}
             />
           </LineChart>

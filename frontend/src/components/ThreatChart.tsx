@@ -58,17 +58,17 @@ export default function ThreatChart() {
     {
       name: "HIGH",
       value: stats.high_threats,
-      color: "#ef4444",
+      color: "#dc2626",
     },
     {
       name: "MEDIUM",
       value: stats.medium_threats,
-      color: "#facc15",
+      color: "#ca8a04",
     },
     {
       name: "LOW",
       value: stats.low_threats,
-      color: "#22c55e",
+      color: "#16a34a",
     },
   ];
 
@@ -97,8 +97,13 @@ export default function ThreatChart() {
               data={chartData}
               dataKey="value"
               nameKey="name"
-              outerRadius={120}
-              label
+              outerRadius={115}
+              stroke="#020711"
+              strokeWidth={2}
+              label={{
+                fontSize: 12,
+                fontWeight: 400,
+              }}
             >
 
               {chartData.map((entry, index) => (
@@ -110,7 +115,21 @@ export default function ThreatChart() {
 
             </Pie>
 
-            <Tooltip />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "#020711",
+                border: "1px solid rgba(34, 211, 238, 0.18)",
+                borderRadius: "12px",
+                color: "#cbd5e1",
+                fontSize: "12px",
+                fontWeight: 400,
+                boxShadow: "0 0 25px rgba(34, 211, 238, 0.08)",
+              }}
+              itemStyle={{
+                fontSize: "12px",
+                fontWeight: 400,
+              }}
+            />
 
           </PieChart>
 
