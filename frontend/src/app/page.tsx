@@ -7,6 +7,10 @@ import DashboardHeader from "../components/DashboardHeader";
 import Sidebar from "../components/Sidebar";
 import ThreatChart from "../components/ThreatChart";
 import ThreatTimeline from "../components/ThreatTimeline";
+import RecentThreats from "@/components/RecentThreats";
+import QuickScanPanel from "@/components/QuickScanPanel";
+import LiveSystemMonitor from "@/components/LiveSystemMonitor";
+import AIAnalysisPanel from "@/components/AIAnalysisPanel";
 
 type ScanHistoryItem = {
   domain: string;
@@ -53,19 +57,29 @@ export default function Home() {
               <StatsCards scanHistory={scanHistory} />
             </div>
 
-            <div className="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
-
+            <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
               <div className="xl:col-span-2">
                 <ThreatTimeline />
               </div>
 
-              <div>
-                <ThreatChart />
+              <RecentThreats />
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+              <QuickScanPanel />
+              <LiveSystemMonitor />
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
+              <div className="xl:col-span-2">
+                <AIAnalysisPanel />
               </div>
+
+              <ThreatChart />
             </div>
           </section>
         </main>
       </div>
     </div>
   );
-}
+  }
