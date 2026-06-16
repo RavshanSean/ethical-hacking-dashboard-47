@@ -11,6 +11,7 @@ from db.database import Base, engine
 from db import models
 from routes.settings_routes import router as settings_router
 from routes.auth_routes import router as auth_router 
+from routes.system_routes import router as system_router
 
 # Create FastAPI app
 app = FastAPI()
@@ -23,6 +24,7 @@ app.include_router(file_router)
 app.include_router(threat_map_router)
 app.include_router(settings_router)
 app.include_router(auth_router)
+app.include_router(system_router)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)

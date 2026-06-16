@@ -29,8 +29,9 @@ const navGroups = [
     items: [
       { label: "URL Scanner", href: "/url-scanner", icon: Shield },
       { label: "File Scanner", href: "/file-scanner", icon: FileWarning },
-      { label: "System Scan", href: "#", icon: Monitor },
+      { label: "System Scan", href: "/system-scan", icon: Monitor },
       { label: "Vulnerability Scan", href: "#", icon: Bug },
+      
     ],
   },
   {

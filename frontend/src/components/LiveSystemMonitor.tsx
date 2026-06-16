@@ -1,13 +1,63 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { API_BASE_URL } from "@/config/api";
 import { Cpu, HardDrive, MemoryStick, Wifi } from "lucide-react";
 
-const metrics = [
-  { label: "CPU", value: "42%", icon: Cpu },
-  { label: "RAM", value: "68%", icon: MemoryStick },
-  { label: "Disk", value: "51%", icon: HardDrive },
-  { label: "Network", value: "Live", icon: Wifi },
-];
+type SystemMetrics = {
+  cpu_percent: number;
+  memory_percent: number;
+  disk_percent: number;
+  network_status: string;
+};
 
 export default function LiveSystemMonitor() {
+  const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
+
+  async function loadMetrics() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/system/scan`);
+      const data = await response.json();
+
+      setMetrics(data);
+    } catch (error) {
+      console.error("Failed to load system metrics:", error);
+    }
+  }
+
+  useEffect(() => {
+    loadMetrics();
+
+    const interval = setInterval(() => {
+      loadMetrics();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const cards = [
+    {
+      label: "CPU",
+      value: metrics ? `${metrics.cpu_percent}%` : "--",
+      icon: Cpu,
+    },
+    {
+      label: "RAM",
+      value: metrics ? `${metrics.memory_percent}%` : "--",
+      icon: MemoryStick,
+    },
+    {
+      label: "Disk",
+      value: metrics ? `${metrics.disk_percent}%` : "--",
+      icon: HardDrive,
+    },
+    {
+      label: "Network",
+      value: metrics ? metrics.network_status : "--",
+      icon: Wifi,
+    },
+  ];
+
   return (
     <div className="rounded-2xl border border-cyan-400/10 bg-[#07111f]/90 p-5 shadow-[0_0_35px_rgba(0,255,220,0.05)]">
       <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">
@@ -19,7 +69,7 @@ export default function LiveSystemMonitor() {
       </h3>
 
       <div className="mt-5 grid grid-cols-2 gap-4">
-        {metrics.map((metric) => {
+        {cards.map((metric) => {
           const Icon = metric.icon;
 
           return (
@@ -33,7 +83,7 @@ export default function LiveSystemMonitor() {
                 {metric.label}
               </p>
 
-              <p className="mt-1 text-2xl font-bold text-white">
+              <p className="mt-1 text-2xl font-semibold text-white">
                 {metric.value}
               </p>
             </div>
