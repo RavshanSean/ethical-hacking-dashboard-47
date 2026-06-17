@@ -30,7 +30,7 @@ const navGroups = [
       { label: "URL Scanner", href: "/url-scanner", icon: Shield },
       { label: "File Scanner", href: "/file-scanner", icon: FileWarning },
       { label: "System Scan", href: "/system-scan", icon: Monitor },
-      { label: "Vulnerability Scan", href: "#", icon: Bug },
+      { label: "Vulnerability Scan", href: "/vulnerability-scan", icon: Bug },
       
     ],
   },
