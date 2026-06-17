@@ -3,6 +3,9 @@ import math
 import zipfile
 from collections import Counter
 from io import BytesIO
+import os
+import subprocess
+import tempfile
 
 
 DANGEROUS_EXTENSIONS = [
@@ -273,6 +276,56 @@ def generate_file_ai_summary(scan_result: dict):
     return " ".join(summary_parts)
 
 
+def scan_with_clamav(filename: str, file_bytes: bytes):
+    try:
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_file.write(file_bytes)
+            temp_path = temp_file.name
+
+        result = subprocess.run(
+            ["clamscan", "--no-summary", temp_path],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        output = result.stdout.strip()
+
+        os.remove(temp_path)
+
+        if result.returncode == 1:
+            threat_name = output.split(":")[-1].replace("FOUND", "").strip()
+
+            return {
+                "enabled": True,
+                "status": "INFECTED",
+                "threat": threat_name,
+                "raw_output": output,
+            }
+
+        if result.returncode == 0:
+            return {
+                "enabled": True,
+                "status": "CLEAN",
+                "threat": None,
+                "raw_output": output,
+            }
+
+        return {
+            "enabled": True,
+            "status": "ERROR",
+            "threat": None,
+            "raw_output": result.stderr.strip() or output,
+        }
+
+    except Exception as error:
+        return {
+            "enabled": False,
+            "status": "UNAVAILABLE",
+            "threat": None,
+            "raw_output": str(error),
+        }
+
 def analyze_file(filename: str, file_bytes: bytes):
     lower_name = filename.lower()
     risk_score = 0
@@ -295,6 +348,7 @@ def analyze_file(filename: str, file_bytes: bytes):
     entropy = calculate_entropy(file_bytes)
     script_matches = detect_script_patterns(file_bytes)
     zip_findings = inspect_zip_contents(file_bytes)
+    clamav_result = scan_with_clamav(filename, file_bytes)
 
     for extension in DANGEROUS_EXTENSIONS:
         if lower_name.endswith(extension):
@@ -358,6 +412,13 @@ def analyze_file(filename: str, file_bytes: bytes):
         risk_score += 10
         reasons.append("File is larger than 25MB")
 
+    if clamav_result["status"] == "INFECTED":
+        risk_score = 100
+        reasons.insert(
+            0,
+            f"ClamAV detected malware signature: {clamav_result['threat']}"
+        )
+
     if len(reasons) == 0:
         reasons.append("No obvious suspicious file indicators detected")
 
@@ -381,6 +442,7 @@ def analyze_file(filename: str, file_bytes: bytes):
         "reasons": reasons,
         "archive_findings": zip_findings,
         "suspicious_script_patterns": script_matches,
+        "antivirus": clamav_result,
         "scan_type": "Static file scan",
         "engine_version": "0.1.0",
         "status": "File scan complete",
