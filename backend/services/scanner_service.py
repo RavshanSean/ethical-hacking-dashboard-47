@@ -1,6 +1,9 @@
 from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
+from urllib.parse import urlparse
+import socket
 import whois
+import requests
 
 from utils.domain_utils import normalize_url, extract_domain
 from utils.risk_engine import calculate_risk
@@ -8,7 +11,83 @@ from utils.risk_engine import calculate_risk
 from services.scan_result_service import save_scan_result
 from services.ai_report_service import generate_ai_summary
 
+def resolve_ip_address(domain: str):
+    try:
+        return socket.gethostbyname(domain)
+    except Exception:
+        return "Unable to resolve"
 
+
+def get_redirect_chain(url: str):
+    try:
+        response = requests.get(
+            url,
+            timeout=10,
+            allow_redirects=True,
+            headers={
+                "User-Agent": "EHD47-SecurityScanner/1.0"
+            },
+        )
+
+        redirect_chain = [
+            item.url for item in response.history
+        ]
+
+        return {
+            "final_url": response.url,
+            "redirect_chain": redirect_chain,
+            "redirect_count": len(redirect_chain),
+            "https_enabled": response.url.startswith("https://"),
+            "status_code": response.status_code,
+        }
+
+    except Exception as error:
+        return {
+            "final_url": url,
+            "redirect_chain": [],
+            "redirect_count": 0,
+            "https_enabled": url.startswith("https://"),
+            "status_code": None,
+            "error": str(error),
+        }
+
+
+def detect_suspicious_domain_indicators(domain: str):
+    indicators = []
+
+    suspicious_keywords = [
+        "login",
+        "verify",
+        "secure",
+        "account",
+        "update",
+        "wallet",
+        "crypto",
+        "free",
+        "gift",
+        "bonus",
+        "prize",
+    ]
+
+    if len(domain) > 40:
+        indicators.append("Domain is unusually long")
+
+    if domain.startswith("xn--"):
+        indicators.append("Domain uses punycode encoding")
+
+    if domain.count("-") >= 3:
+        indicators.append("Domain contains many hyphens")
+
+    if any(char.isdigit() for char in domain):
+        indicators.append("Domain contains numbers")
+
+    for keyword in suspicious_keywords:
+        if keyword in domain.lower():
+            indicators.append(
+                f"Domain contains suspicious keyword: {keyword}"
+            )
+
+    return indicators
 # Main scanning function
 # Receives a URL from FastAPI
 def scan_website(input_url: str):
@@ -18,6 +97,9 @@ def scan_website(input_url: str):
 
     # Extract domain from URL
     domain = extract_domain(input_url)
+    resolved_ip = resolve_ip_address(domain)
+    redirect_info = get_redirect_chain(input_url)
+    suspicious_domain_indicators = detect_suspicious_domain_indicators(domain)
 
     # Invalid URL protection
     if not domain:
@@ -128,6 +210,28 @@ def scan_website(input_url: str):
     risk_score = risk_result["risk_score"]
     threat_level = risk_result["threat_level"]
     reasons = risk_result["reasons"]
+    
+    if suspicious_domain_indicators:
+        risk_score += min(len(suspicious_domain_indicators) * 10, 30)
+        reasons.extend(suspicious_domain_indicators)
+
+    if redirect_info.get("redirect_count", 0) >= 3:
+        risk_score += 15
+        reasons.append("Multiple redirects detected")
+
+    if not redirect_info.get("https_enabled"):
+        risk_score += 20
+        reasons.append("Final destination does not use HTTPS")
+
+    risk_score = min(risk_score, 100)
+
+    if risk_score >= 70:
+        threat_level = "HIGH"
+    elif risk_score >= 30:
+        threat_level = "MEDIUM"
+    else:
+        threat_level = "LOW"
+    
     # Generate AI-powered security summary
     ai_summary = generate_ai_summary({
         "risk_score": risk_score,
@@ -143,6 +247,13 @@ def scan_website(input_url: str):
     scan_result = {
         "url": input_url,
         "domain": domain,
+        "resolved_ip": resolved_ip,
+        "final_url": redirect_info.get("final_url"),
+        "redirect_chain": redirect_info.get("redirect_chain"),
+        "redirect_count": redirect_info.get("redirect_count"),
+        "https_enabled": redirect_info.get("https_enabled"),
+        "http_status_code": redirect_info.get("status_code"),
+        "suspicious_domain_indicators": suspicious_domain_indicators,
         "registrar": registrar,
         "creation_date": creation_date,
         "expiration_date": expiration_date,
@@ -165,7 +276,7 @@ def scan_website(input_url: str):
         ),
         "reasons": reasons,
         "scan_type": "Dynamic browser scan",
-        "engine_version": "0.1.0",
+        "engine_version": "0.2.0-url-intel",
         "analysis_source": "Local rules + threat intelligence",
         "status": "Scan complete",
     }

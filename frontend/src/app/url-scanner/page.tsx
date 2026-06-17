@@ -18,6 +18,13 @@ import {
 type ScanResult = {
   url: string;
   domain: string;
+  resolved_ip: string;
+  final_url: string;
+  redirect_chain: string[];
+  redirect_count: number;
+  https_enabled: boolean;
+  http_status_code: number | null;
+  suspicious_domain_indicators: string[];
   registrar: string;
   creation_date: string;
   expiration_date: string;
@@ -35,6 +42,7 @@ type ScanResult = {
   engine_version: string;
   analysis_source: string;
   ai_summary?: string;
+  
 };
 
 export default function UrlScannerPage() {
@@ -192,6 +200,59 @@ export default function UrlScannerPage() {
                 )}
 
                 {result && (
+                  <div className="mt-6 rounded-xl border border-cyan-500/20 bg-black p-5">
+                    <h3 className="font-semibold text-cyan-300">
+                      URL Intelligence
+                    </h3>
+
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                      <InfoCard label="Resolved IP" value={result.resolved_ip} />
+                      <InfoCard label="Final URL" value={result.final_url} />
+                      <InfoCard label="Redirect Count" value={String(result.redirect_count)} />
+                      <InfoCard label="HTTPS Enabled" value={String(result.https_enabled)} />
+                      <InfoCard
+                        label="HTTP Status"
+                        value={result.http_status_code ? String(result.http_status_code) : "Unknown"}
+                      />
+                      <InfoCard
+                        label="Suspicious Indicators"
+                        value={String(result.suspicious_domain_indicators.length)}
+                      />
+                    </div>
+
+                    {result.redirect_chain.length > 0 && (
+                      <div className="mt-5 rounded-xl border border-cyan-500/10 bg-[#07111f] p-4">
+                        <p className="text-sm font-semibold text-cyan-300">
+                          Redirect Chain
+                        </p>
+
+                        <ul className="mt-3 space-y-2 text-sm text-slate-400">
+                          {result.redirect_chain.map((redirect, index) => (
+                            <li key={index}>
+                              {index + 1}. {redirect}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {result.suspicious_domain_indicators.length > 0 && (
+                      <div className="mt-5 rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-4">
+                        <p className="text-sm font-semibold text-yellow-300">
+                          Suspicious Domain Indicators
+                        </p>
+
+                        <ul className="mt-3 space-y-2 text-sm text-slate-300">
+                          {result.suspicious_domain_indicators.map((indicator, index) => (
+                            <li key={index}>• {indicator}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {result && (
                   <div className="mt-6 rounded-xl border border-green-500/20 bg-black p-5">
                     <h3 className="font-bold text-green-300">
                       Security Reasons
@@ -229,6 +290,10 @@ export default function UrlScannerPage() {
 
                 <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                   <InfoCard label="Domain" value={result.domain} />
+                  <InfoCard label="Resolved IP" value={result.resolved_ip} />
+                  <InfoCard label="Final URL" value={result.final_url} />
+                  <InfoCard label="Redirect Count" value={String(result.redirect_count)} />
+                  <InfoCard label="HTTPS Enabled" value={String(result.https_enabled)} />
                   <InfoCard label="Registrar" value={result.registrar} />
                   <InfoCard label="Created" value={result.creation_date} />
                   <InfoCard label="Expires" value={result.expiration_date} />
