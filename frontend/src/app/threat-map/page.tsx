@@ -149,8 +149,8 @@ export default function ThreatMapPage() {
               />
             </div>
 
-            <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
-              <div className="rounded-2xl border border-cyan-500/20 bg-[#0b1220] p-6 xl:col-span-2">
+            <div className="mt-6">
+              <div className="rounded-2xl border border-cyan-500/20 bg-[#0b1220] p-6">
                 <div className="mb-6 flex items-center justify-between">
                   <h2 className="text-2xl font-semibold text-cyan-300">
                     Global Threat Activity
@@ -162,53 +162,6 @@ export default function ThreatMapPage() {
                 </div>
 
                 <ThreatMapClient />
-              </div>
-
-              <div className="rounded-2xl border border-green-500/20 bg-[#0b1220] p-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-green-300">
-                    Live Threat Feed
-                  </h2>
-
-                  <span className="text-xs text-green-400">
-                    LIVE
-                  </span>
-                </div>
-
-                <div className="mt-5 max-h-[620px] space-y-4 overflow-y-auto pr-2">
-                  {threats.map((threat, index) => (
-                    <div
-                      key={`${threat.id}-${index}`}
-                      className="rounded-xl border border-green-500/10 bg-black p-4"
-                    >
-                      <div className="flex items-center justify-between">
-                        <p className="font-semibold text-white">
-                          {threat.city}, {threat.country}
-                        </p>
-
-                        <span
-                          className={`text-xs font-bold ${
-                            threat.severity === "HIGH"
-                              ? "text-red-400"
-                              : threat.severity === "MEDIUM"
-                              ? "text-yellow-300"
-                              : "text-green-400"
-                          }`}
-                        >
-                          {threat.severity}
-                        </span>
-                      </div>
-
-                      <p className="mt-2 text-sm text-gray-400">
-                        {threat.threat_type}
-                      </p>
-
-                      <p className="mt-2 text-xs text-gray-500">
-                        {threat.message}
-                      </p>
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
           </section>
