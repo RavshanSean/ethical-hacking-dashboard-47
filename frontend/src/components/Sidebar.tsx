@@ -32,13 +32,14 @@ const navGroups = [
       { label: "System Scan", href: "/system-scan", icon: Monitor },
       { label: "Vulnerability Scan", href: "/vulnerability-scan", icon: Bug },
       
+      
     ],
   },
   {
     title: "Monitor",
     items: [
       { label: "Live Monitor", href: "/live-monitor", icon: Activity },
-      { label: "Processes", href: "#", icon: BarChart3 },
+      { label: "Processes", href: "/processes", icon: BarChart3 },
       { label: "Network", href: "#", icon: Network },
       { label: "Browser Protection", href: "#", icon: Lock },
     ],
