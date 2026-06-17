@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 import socket
 import whois
 import requests
+from services.event_service import create_event
 
 from utils.domain_utils import normalize_url, extract_domain
 from utils.risk_engine import calculate_risk
@@ -31,6 +32,8 @@ def get_ip_intelligence(ip: str):
             "isp": "Unknown",
             "org": "Unknown",
             "asn": "Unknown",
+            "latitude": None,
+            "longitude": None,
         }
 
     try:
@@ -49,6 +52,8 @@ def get_ip_intelligence(ip: str):
             "isp": data.get("isp") or "Unknown",
             "org": data.get("org") or "Unknown",
             "asn": data.get("as") or "Unknown",
+            "latitude": data.get("lat"),
+            "longitude": data.get("lon"),
         }
 
     except Exception:
@@ -60,6 +65,8 @@ def get_ip_intelligence(ip: str):
             "isp": "Unknown",
             "org": "Unknown",
             "asn": "Unknown",
+            "latitude": None,
+            "longitude": None,
         }
 
 def get_redirect_chain(url: str):
@@ -374,6 +381,20 @@ def scan_website(input_url: str):
     }
 
 # Save full scan report to database
+    if threat_level == "HIGH":
+        create_event(
+            event_type="HIGH_RISK_URL",
+            severity="HIGH",
+            message=(
+                f"High-risk URL detected: {domain} "
+                f"(Risk {risk_score}/100)"
+            ),
+            country=ip_intelligence.get("country"),
+            city=ip_intelligence.get("city"),
+            latitude=ip_intelligence.get("latitude"),
+            longitude=ip_intelligence.get("longitude"),
+        )
+    
     save_scan_result(scan_result)
 
     return scan_result

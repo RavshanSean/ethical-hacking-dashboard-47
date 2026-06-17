@@ -11,12 +11,24 @@ from services.websocket_manager import manager
 MAX_EVENTS = 50
 
 
-def create_event(event_type: str, severity: str, message: str):
+def create_event(
+    event_type: str,
+    severity: str,
+    message: str,
+    country: str | None = None,
+    city: str | None = None,
+    latitude: float | None = None,
+    longitude: float | None = None,
+):
     event = {
         "type": event_type,
         "severity": severity,
         "message": message,
         "timestamp": datetime.now().isoformat(),
+        "country": country,
+        "city": city,
+        "latitude": latitude,
+        "longitude": longitude,
     }
 
     db: Session = SessionLocal()

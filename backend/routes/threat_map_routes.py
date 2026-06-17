@@ -46,7 +46,12 @@ async def get_threat_map_events():
     map_events = []
 
     for index, event in enumerate(recent_events):
-        location = LOCATION_POOL[index % len(LOCATION_POOL)]
+        location = {
+            "country": event.get("country") or LOCATION_POOL[index % len(LOCATION_POOL)]["country"],
+            "city": event.get("city") or LOCATION_POOL[index % len(LOCATION_POOL)]["city"],
+            "latitude": event.get("latitude") or LOCATION_POOL[index % len(LOCATION_POOL)]["latitude"],
+            "longitude": event.get("longitude") or LOCATION_POOL[index % len(LOCATION_POOL)]["longitude"],
+        }
 
         map_events.append(
             {
