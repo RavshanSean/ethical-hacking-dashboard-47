@@ -14,6 +14,7 @@ from services.ai_report_service import generate_ai_summary
 import ssl
 from datetime import datetime, timezone
 
+
 def resolve_ip_address(domain: str):
     try:
         return socket.gethostbyname(domain)

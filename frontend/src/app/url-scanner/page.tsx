@@ -51,6 +51,13 @@ type ScanResult = {
     org: string;
     asn: string;
 };
+  ssl_intelligence: {
+  valid: boolean;
+  issuer: string;
+  expires_at: string;
+  days_left: number | null;
+  error?: string;
+};
   
 };
 
@@ -222,6 +229,17 @@ export default function UrlScannerPage() {
                       <InfoCard label="ISP" value={result.ip_intelligence.isp} />
                       <InfoCard label="Organization" value={result.ip_intelligence.org} />
                       <InfoCard label="ASN" value={result.ip_intelligence.asn} />
+                      <InfoCard label="SSL Valid" value={String(result.ssl_intelligence.valid)} />
+                      <InfoCard label="SSL Issuer" value={result.ssl_intelligence.issuer} />
+                      <InfoCard label="SSL Expires" value={result.ssl_intelligence.expires_at} />
+                      <InfoCard
+                        label="SSL Days Left"
+                        value={
+                          result.ssl_intelligence.days_left !== null
+                            ? String(result.ssl_intelligence.days_left)
+                            : "Unknown"
+                        }
+                      />
                       <InfoCard label="Final URL" value={result.final_url} />
                       <InfoCard label="Redirect Count" value={String(result.redirect_count)} />
                       <InfoCard label="HTTPS Enabled" value={String(result.https_enabled)} />
@@ -241,13 +259,37 @@ export default function UrlScannerPage() {
                           Redirect Chain
                         </p>
 
-                        <ul className="mt-3 space-y-2 text-sm text-slate-400">
+                        <div className="mt-4 space-y-3">
                           {result.redirect_chain.map((redirect, index) => (
-                            <li key={index}>
-                              {index + 1}. {redirect}
-                            </li>
+                            <div key={index} className="flex items-start gap-3">
+                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-cyan-400/20 bg-cyan-400/10 text-xs text-cyan-300">
+                                {index + 1}
+                              </div>
+
+                              <div className="min-w-0 flex-1 rounded-xl border border-white/5 bg-black/30 p-3">
+                                <p className="break-all text-sm text-slate-300">
+                                  {redirect}
+                                </p>
+                              </div>
+                            </div>
                           ))}
-                        </ul>
+
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-400/10 text-xs text-emerald-300">
+                              ✓
+                            </div>
+
+                            <div className="min-w-0 flex-1 rounded-xl border border-emerald-400/10 bg-emerald-500/5 p-3">
+                              <p className="text-xs uppercase tracking-[0.25em] text-emerald-300">
+                                Final Destination
+                              </p>
+
+                              <p className="mt-1 break-all text-sm text-slate-300">
+                                {result.final_url}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
 
