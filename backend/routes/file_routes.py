@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from services.event_service import create_event
 from services.file_scanner_service import analyze_file
+from services.quarantine_service import quarantine_file
 
 router = APIRouter()
 
@@ -21,6 +22,15 @@ async def scan_file(file: UploadFile = File(...)):
         filename=file.filename,
         file_bytes=file_bytes,
     )
+    
+    if result.get("antivirus", {}).get("status") == "INFECTED":
+        quarantine_item = quarantine_file(
+            filename=file.filename,
+            file_bytes=file_bytes,
+            scan_result=result,
+        )
+
+        result["quarantine"] = quarantine_item
     
     create_event(
         event_type="FILE_SCAN",

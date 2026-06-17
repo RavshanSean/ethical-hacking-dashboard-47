@@ -1,0 +1,12 @@
+[
+  {
+    "id": "1bdac7cc-1fab-4189-96ae-0a249e133f63",
+    "original_filename": "eicar.com",
+    "stored_filename": "1bdac7cc-1fab-4189-96ae-0a249e133f63.quarantine",
+    "threat_level": "HIGH",
+    "risk_score": 100,
+    "threat": "Eicar-Test-Signature",
+    "status": "QUARANTINED",
+    "created_at": 1781663435
+  }
+]
