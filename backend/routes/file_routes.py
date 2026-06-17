@@ -23,7 +23,10 @@ async def scan_file(file: UploadFile = File(...)):
         file_bytes=file_bytes,
     )
     
-    if result.get("antivirus", {}).get("status") == "INFECTED":
+    if (
+        result.get("antivirus", {}).get("status") == "INFECTED"
+        or result.get("threat_level") == "HIGH"
+    ):
         quarantine_item = quarantine_file(
             filename=file.filename,
             file_bytes=file_bytes,

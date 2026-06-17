@@ -47,7 +47,7 @@ const navGroups = [
   {
     title: "Tools",
     items: [
-      { label: "Quarantine", href: "#", icon: Box },
+      { label: "Quarantine", href: "/quarantine", icon: Box },
       { label: "Logs", href: "/logs", icon: ScrollText },
       { label: "Reports", href: "/analytics", icon: BarChart3 },
       { label: "Threat Map", href: "/threat-map", icon: Globe },

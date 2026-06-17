@@ -1,0 +1,159 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Sidebar from "@/components/Sidebar";
+import { API_BASE_URL } from "@/config/api";
+import { ShieldAlert, Skull, Archive } from "lucide-react";
+
+type QuarantineItem = {
+  id: string;
+  original_filename: string;
+  stored_filename: string;
+  threat_level: string;
+  risk_score: number;
+  threat: string | null;
+  status: string;
+  created_at: number;
+};
+
+export default function QuarantinePage() {
+  const [items, setItems] = useState<QuarantineItem[]>([]);
+
+  async function loadQuarantine() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/quarantine`);
+      const data = await response.json();
+      setItems(data.items || []);
+    } catch (error) {
+      console.error("Failed to load quarantine:", error);
+    }
+  }
+
+  useEffect(() => {
+    loadQuarantine();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-[#020711] text-white">
+      <div className="flex">
+        <Sidebar />
+
+        <main className="flex-1 p-6">
+          <section className="mx-auto max-w-7xl">
+            <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
+              Malware Containment
+            </p>
+
+            <h1 className="mt-3 text-4xl font-bold tracking-tight">
+              Quarantine
+            </h1>
+
+            <p className="mt-2 max-w-3xl text-sm text-slate-400">
+              Review files isolated by the antivirus engine after malware
+              detection.
+            </p>
+
+            <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+              <StatCard title="Quarantined Files" value={String(items.length)} icon={<Archive />} />
+              <StatCard title="High Risk" value={String(items.filter((item) => item.threat_level === "HIGH").length)} icon={<ShieldAlert />} />
+              <StatCard title="Malware Signatures" value={String(items.filter((item) => item.threat).length)} icon={<Skull />} />
+            </div>
+
+            <div className="mt-8 rounded-2xl border border-cyan-400/10 bg-[#07111f]/90 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">
+                    Isolated Files
+                  </p>
+
+                  <h2 className="mt-2 text-2xl font-semibold text-white">
+                    Quarantine Records
+                  </h2>
+                </div>
+
+                <span className="rounded-full border border-red-400/15 bg-red-400/10 px-3 py-1 text-xs text-red-300">
+                  PROTECTED
+                </span>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                {items.length === 0 ? (
+                  <div className="rounded-2xl border border-white/5 bg-black/30 p-6 text-center text-slate-400">
+                    No quarantined files yet.
+                  </div>
+                ) : (
+                  items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="rounded-2xl border border-red-400/10 bg-black/35 p-5"
+                    >
+                      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <p className="text-lg font-semibold text-white">
+                            {item.original_filename}
+                          </p>
+
+                          <p className="mt-1 text-sm text-slate-400">
+                            Threat: {item.threat || "Unknown"}
+                          </p>
+
+                          <p className="mt-1 text-xs text-slate-500">
+                            Stored as: {item.stored_filename}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <Badge color="red">{item.threat_level}</Badge>
+                          <Badge color="yellow">Risk {item.risk_score}/100</Badge>
+                          <Badge color="cyan">{item.status}</Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({
+  title,
+  value,
+  icon,
+}: {
+  title: string;
+  value: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-cyan-400/10 bg-[#07111f]/90 p-5">
+      <div className="text-cyan-300">{icon}</div>
+      <p className="mt-4 text-sm text-slate-400">{title}</p>
+      <h3 className="mt-2 text-3xl font-semibold text-white">{value}</h3>
+    </div>
+  );
+}
+
+function Badge({
+  children,
+  color,
+}: {
+  children: React.ReactNode;
+  color: "red" | "yellow" | "cyan";
+}) {
+  const styles = {
+    red: "border-red-400/20 bg-red-500/10 text-red-300",
+    yellow: "border-yellow-400/20 bg-yellow-500/10 text-yellow-300",
+    cyan: "border-cyan-400/20 bg-cyan-500/10 text-cyan-300",
+  };
+
+  return (
+    <span className={`rounded-full border px-3 py-1 text-xs font-medium ${styles[color]}`}>
+      {children}
+    </span>
+  );
+}
