@@ -14,6 +14,7 @@ from routes.auth_routes import router as auth_router
 from routes.system_routes import router as system_router
 from routes.vulnerability_routes import router as vulnerability_router
 from routes.process_routes import router as process_router
+from routes.network_routes import router as network_router
 
 # Create FastAPI app
 app = FastAPI()
@@ -29,6 +30,7 @@ app.include_router(auth_router)
 app.include_router(system_router)
 app.include_router(vulnerability_router)
 app.include_router(process_router)
+app.include_router(network_router)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
