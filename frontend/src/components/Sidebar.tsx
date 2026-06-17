@@ -40,7 +40,7 @@ const navGroups = [
     items: [
       { label: "Live Monitor", href: "/live-monitor", icon: Activity },
       { label: "Processes", href: "/processes", icon: BarChart3 },
-      { label: "Network", href: "#", icon: Network },
+      { label: "Network", href: "/network", icon: Network },
       { label: "Browser Protection", href: "#", icon: Lock },
     ],
   },
