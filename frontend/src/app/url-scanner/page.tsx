@@ -42,6 +42,15 @@ type ScanResult = {
   engine_version: string;
   analysis_source: string;
   ai_summary?: string;
+  ip_intelligence: {
+    ip: string;
+    country: string;
+    region: string;
+    city: string;
+    isp: string;
+    org: string;
+    asn: string;
+};
   
 };
 
@@ -207,6 +216,12 @@ export default function UrlScannerPage() {
 
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                       <InfoCard label="Resolved IP" value={result.resolved_ip} />
+                      <InfoCard label="Country" value={result.ip_intelligence.country} />
+                      <InfoCard label="Region" value={result.ip_intelligence.region} />
+                      <InfoCard label="City" value={result.ip_intelligence.city} />
+                      <InfoCard label="ISP" value={result.ip_intelligence.isp} />
+                      <InfoCard label="Organization" value={result.ip_intelligence.org} />
+                      <InfoCard label="ASN" value={result.ip_intelligence.asn} />
                       <InfoCard label="Final URL" value={result.final_url} />
                       <InfoCard label="Redirect Count" value={String(result.redirect_count)} />
                       <InfoCard label="HTTPS Enabled" value={String(result.https_enabled)} />

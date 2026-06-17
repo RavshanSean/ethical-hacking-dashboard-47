@@ -11,12 +11,55 @@ from utils.risk_engine import calculate_risk
 from services.scan_result_service import save_scan_result
 from services.ai_report_service import generate_ai_summary
 
+import ssl
+from datetime import datetime, timezone
+
 def resolve_ip_address(domain: str):
     try:
         return socket.gethostbyname(domain)
     except Exception:
         return "Unable to resolve"
 
+def get_ip_intelligence(ip: str):
+    if not ip or ip == "Unable to resolve":
+        return {
+            "ip": ip,
+            "country": "Unknown",
+            "region": "Unknown",
+            "city": "Unknown",
+            "isp": "Unknown",
+            "org": "Unknown",
+            "asn": "Unknown",
+        }
+
+    try:
+        response = requests.get(
+            f"http://ip-api.com/json/{ip}",
+            timeout=5,
+        )
+
+        data = response.json()
+
+        return {
+            "ip": ip,
+            "country": data.get("country") or "Unknown",
+            "region": data.get("regionName") or "Unknown",
+            "city": data.get("city") or "Unknown",
+            "isp": data.get("isp") or "Unknown",
+            "org": data.get("org") or "Unknown",
+            "asn": data.get("as") or "Unknown",
+        }
+
+    except Exception:
+        return {
+            "ip": ip,
+            "country": "Unknown",
+            "region": "Unknown",
+            "city": "Unknown",
+            "isp": "Unknown",
+            "org": "Unknown",
+            "asn": "Unknown",
+        }
 
 def get_redirect_chain(url: str):
     try:
@@ -89,6 +132,50 @@ def detect_suspicious_domain_indicators(domain: str):
 
     return indicators
 # Main scanning function
+def get_ssl_intelligence(domain: str):
+    try:
+        context = ssl.create_default_context()
+
+        with socket.create_connection((domain, 443), timeout=5) as sock:
+            with context.wrap_socket(sock, server_hostname=domain) as secure_sock:
+                cert = secure_sock.getpeercert()
+
+        issuer_parts = cert.get("issuer", [])
+        issuer = "Unknown"
+
+        for part in issuer_parts:
+            for key, value in part:
+                if key == "organizationName":
+                    issuer = value
+
+        expires_raw = cert.get("notAfter")
+        expires_at = "Unknown"
+        days_left = None
+
+        if expires_raw:
+            expires_date = datetime.strptime(
+                expires_raw,
+                "%b %d %H:%M:%S %Y %Z"
+            ).replace(tzinfo=timezone.utc)
+
+            expires_at = expires_date.isoformat()
+            days_left = (expires_date - datetime.now(timezone.utc)).days
+
+        return {
+            "valid": True,
+            "issuer": issuer,
+            "expires_at": expires_at,
+            "days_left": days_left,
+        }
+
+    except Exception as error:
+        return {
+            "valid": False,
+            "issuer": "Unknown",
+            "expires_at": "Unknown",
+            "days_left": None,
+            "error": str(error),
+        }
 # Receives a URL from FastAPI
 def scan_website(input_url: str):
 
@@ -98,6 +185,8 @@ def scan_website(input_url: str):
     # Extract domain from URL
     domain = extract_domain(input_url)
     resolved_ip = resolve_ip_address(domain)
+    ip_intelligence = get_ip_intelligence(resolved_ip)
+    ssl_intelligence = get_ssl_intelligence(domain)
     redirect_info = get_redirect_chain(input_url)
     suspicious_domain_indicators = detect_suspicious_domain_indicators(domain)
 
@@ -248,6 +337,8 @@ def scan_website(input_url: str):
         "url": input_url,
         "domain": domain,
         "resolved_ip": resolved_ip,
+        "ip_intelligence": ip_intelligence,
+        "ssl_intelligence": ssl_intelligence,
         "final_url": redirect_info.get("final_url"),
         "redirect_chain": redirect_info.get("redirect_chain"),
         "redirect_count": redirect_info.get("redirect_count"),
