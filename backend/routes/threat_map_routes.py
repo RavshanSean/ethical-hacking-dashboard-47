@@ -46,12 +46,24 @@ async def get_threat_map_events():
     map_events = []
 
     for index, event in enumerate(recent_events):
+        fallback = LOCATION_POOL[index % len(LOCATION_POOL)]
+
+        has_real_geo = (
+            event.get("country")
+            and event.get("country") != "Unknown"
+            and event.get("city")
+            and event.get("city") != "Unknown"
+            and event.get("latitude") is not None
+            and event.get("longitude") is not None
+        )
+
         location = {
-            "country": event.get("country") or LOCATION_POOL[index % len(LOCATION_POOL)]["country"],
-            "city": event.get("city") or LOCATION_POOL[index % len(LOCATION_POOL)]["city"],
-            "latitude": event.get("latitude") or LOCATION_POOL[index % len(LOCATION_POOL)]["latitude"],
-            "longitude": event.get("longitude") or LOCATION_POOL[index % len(LOCATION_POOL)]["longitude"],
+            "country": event.get("country") if has_real_geo else fallback["country"],
+            "city": event.get("city") if has_real_geo else fallback["city"],
+            "latitude": event.get("latitude") if has_real_geo else fallback["latitude"],
+            "longitude": event.get("longitude") if has_real_geo else fallback["longitude"],
         }
+         
 
         map_events.append(
             {

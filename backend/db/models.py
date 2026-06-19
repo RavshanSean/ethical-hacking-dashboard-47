@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean
 from db.database import Base
+from sqlalchemy import Float
 
 
 
@@ -11,14 +12,15 @@ class SecurityEvent(Base):
     __tablename__ = "security_events"
 
     id = Column(Integer, primary_key=True, index=True)
-
     event_type = Column(String)
-
     severity = Column(String)
-
     message = Column(String)
-
     timestamp = Column(String)
+    country = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     
     
 class ScanResult(Base):

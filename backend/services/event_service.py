@@ -38,7 +38,11 @@ def create_event(
         severity=severity,
         message=message,
         timestamp=event["timestamp"],
-    )
+        country=country,
+        city=city,
+        latitude=latitude,
+        longitude=longitude,
+)
 
     db.add(db_event)
 
@@ -78,6 +82,10 @@ def get_recent_events(limit: int = 10):
             "severity": event.severity,
             "message": event.message,
             "timestamp": event.timestamp,
+            "country": event.country,
+            "city": event.city,
+            "latitude": event.latitude,
+            "longitude": event.longitude,
         }
         for event in events
     ]
