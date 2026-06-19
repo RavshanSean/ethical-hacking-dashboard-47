@@ -41,11 +41,21 @@ LOCATION_POOL = [
 
 @router.get("/threat-map/events")
 async def get_threat_map_events():
-    recent_events = get_recent_events(limit=10)
+    recent_events = get_recent_events(limit=25)
 
     map_events = []
 
     for index, event in enumerate(recent_events):
+        
+        if event["type"] not in [
+            "HIGH_RISK_URL",
+            "FILE_QUARANTINED",
+            "MALWARE_DETECTED",
+            "CRITICAL_VULNERABILITY",
+            "DANGEROUS_IP_CONNECTION",
+        ]:
+            continue
+
         fallback = LOCATION_POOL[index % len(LOCATION_POOL)]
 
         has_real_geo = (
@@ -67,7 +77,7 @@ async def get_threat_map_events():
 
         map_events.append(
             {
-                "id": index + 1,
+                "id": len(map_events) + 1,
                 "country": location["country"],
                 "city": location["city"],
                 "latitude": location["latitude"],
