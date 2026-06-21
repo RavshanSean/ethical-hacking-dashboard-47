@@ -118,7 +118,7 @@ export default function DashboardHeader() {
 
                 <div className="mt-4 space-y-3">
                   {filteredAlerts.length === 0 && (
-                    <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/5 p-3 text-sm text-emerald-300">
+                    <div className="rounded-xl border border-sky-400/20 bg-sky-500/5 p-3 text-sm text-sky-300">
                       No matching alerts.
                     </div>
                   )}

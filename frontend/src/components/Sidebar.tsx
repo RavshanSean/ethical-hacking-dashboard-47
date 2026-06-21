@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
+import { Bot } from "lucide-react";
 import {
   LayoutDashboard,
   Shield,
@@ -31,6 +32,7 @@ const navGroups = [
       { label: "File Scanner", href: "/file-scanner", icon: FileWarning },
       { label: "System Scan", href: "/system-scan", icon: Monitor },
       { label: "Vulnerability Scan", href: "/vulnerability-scan", icon: Bug },
+      { label: "Browser Protection", href: "/browser-protection", icon: Lock },
       
       
     ],
@@ -41,17 +43,18 @@ const navGroups = [
       { label: "Live Monitor", href: "/live-monitor", icon: Activity },
       { label: "Processes", href: "/processes", icon: BarChart3 },
       { label: "Network", href: "/network", icon: Network },
-      { label: "Browser Protection", href: "/browser-protection", icon: Lock },
+      { label: "Quarantine", href: "/quarantine", icon: Box },
+      { label: "Logs", href: "/logs", icon: ScrollText },
+      { label: "Reports", href: "/analytics", icon: BarChart3 },
+      
     ],
   },
   {
     title: "Tools",
     items: [
-      { label: "Quarantine", href: "/quarantine", icon: Box },
-      { label: "Logs", href: "/logs", icon: ScrollText },
-      { label: "Reports", href: "/analytics", icon: BarChart3 },
-      { label: "Threat Map", href: "/threat-map", icon: Globe },
+      { label: "IP & Threat Map", href: "/threat-map", icon: Globe },
       { label: "Settings", href: "/settings", icon: Settings },
+      { label: "AI Copilot", href: "/ai-copilot", icon: Bot },
     ],
   },
 ];
