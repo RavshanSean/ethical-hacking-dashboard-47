@@ -9,9 +9,19 @@ type StoredUser = {
   email: string;
 };
 
+type AlertItem = {
+  id: number;
+  threat_type: string;
+  severity: string;
+  message: string;
+  timestamp: string;
+};
+
 export default function DashboardHeader() {
   const router = useRouter();
   const [user, setUser] = useState<StoredUser | null>(null);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [alertsOpen, setAlertsOpen] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
@@ -26,6 +36,17 @@ export default function DashboardHeader() {
     localStorage.removeItem("user");
     router.push("/login");
   }
+
+  useEffect(() => {
+  fetch("http://127.0.0.1:8000/threat-map/events")
+    .then((response) => response.json())
+    .then((data) => {
+      if (Array.isArray(data)) {
+        setAlerts(data.slice(0, 5));
+      }
+    })
+    .catch((error) => console.error("Alert fetch error:", error));
+  }, []);
 
   return (
     <header className="mb-8 overflow-hidden rounded-[24px] border border-cyan-400/10 bg-[#050b16] shadow-[0_0_45px_rgba(0,255,220,0.05)]">
@@ -52,10 +73,77 @@ export default function DashboardHeader() {
           </div>
 
           <button className="relative rounded-2xl border border-white/10 bg-black/45 p-3 text-cyan-300 transition hover:border-cyan-300/50 hover:shadow-[0_0_25px_rgba(34,211,238,0.18)]">
-            <Bell size={20} />
-            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow-[0_0_18px_rgba(239,68,68,0.7)]">
-              3
-            </span>
+
+          <div className="relative">
+            <button
+              onClick={() => setAlertsOpen((open) => !open)}
+              className="relative rounded-2xl border border-white/10 bg-black/45 p-3 text-cyan-300 transition hover:border-cyan-300/50 hover:shadow-[0_0_25px_rgba(34,211,238,0.18)]"
+            >
+              <Bell size={20} />
+
+              {alerts.length > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow-[0_0_18px_rgba(239,68,68,0.7)]">
+                  {alerts.length}
+                </span>
+              )}
+            </button>
+
+            {alertsOpen && (
+              <div className="absolute right-0 z-50 mt-3 w-96 rounded-2xl border border-cyan-400/10 bg-[#07111f] p-4 shadow-[0_0_35px_rgba(34,211,238,0.12)]">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-white">
+                    Recent Alerts
+                  </h3>
+
+                  <span className="text-xs text-cyan-300">
+                    {alerts.length} active
+                  </span>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {alerts.length === 0 && (
+                    <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/5 p-3 text-sm text-emerald-300">
+                      No active alerts.
+                    </div>
+                  )}
+
+                  {alerts.map((alert) => (
+                    <div
+                      key={alert.id}
+                      className="rounded-xl border border-white/5 bg-black/40 p-3"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs uppercase tracking-[0.22em] text-cyan-300">
+                          {alert.threat_type}
+                        </p>
+
+                        <span
+                          className={`text-xs font-bold ${
+                            alert.severity === "HIGH"
+                              ? "text-red-300"
+                              : alert.severity === "MEDIUM"
+                              ? "text-yellow-300"
+                              : "text-emerald-300"
+                          }`}
+                        >
+                          {alert.severity}
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-sm text-slate-300">
+                        {alert.message}
+                      </p>
+
+                      <p className="mt-2 text-xs text-slate-500">
+                        {new Date(alert.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           </button>
 
           <div className="flex items-center gap-3 rounded-2xl border border-emerald-400/15 bg-black/45 px-4 py-3">
