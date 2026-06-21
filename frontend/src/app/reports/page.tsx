@@ -6,6 +6,7 @@ import Sidebar from "@/components/Sidebar";
 export default function ReportsPage() {
   const [status, setStatus] = useState("");
   const [reportData, setReportData] = useState<any[]>([]);
+  const [summary, setSummary] = useState("");
 
 useEffect(() => {
   fetch("http://127.0.0.1:8000/threat-map/events")
@@ -94,6 +95,30 @@ function printReport() {
   window.print();
 }
 
+function generateSummary() {
+  if (reportData.length === 0) {
+    setSummary("No report data available to summarize.");
+    return;
+  }
+
+  const highCount = reportData.filter(
+        (event) => event.severity === "HIGH"
+    ).length;
+
+    const countries = new Set(
+        reportData.map((event) => event.country)
+    ).size;
+
+    const latestThreat = reportData[0]?.message || "No latest threat available.";
+
+    setSummary(
+        `This report contains ${reportData.length} security events across ${countries} countries. ` +
+        `${highCount} events are marked as high severity. ` +
+        `Latest threat: ${latestThreat} ` +
+        `Recommendation: review high-risk domains, verify affected infrastructure, and continue monitoring threat activity.`
+    );
+    }
+
   return (
     <div className="min-h-screen bg-[#020711] text-white">
       <div className="flex">
@@ -179,6 +204,14 @@ function printReport() {
                     >
                     Print / Save PDF
                 </button>
+
+                <button
+                    onClick={generateSummary}
+                    className="rounded-xl border border-purple-400/20 bg-purple-500/10 px-5 py-3 text-purple-300"
+                    >
+                    Generate AI Summary
+                </button>
+
               </div>
 
               {status && (
@@ -187,7 +220,20 @@ function printReport() {
                 </p>
               )}
             </div>
-          </section>
+
+            {summary && (
+            <div className="mt-8 rounded-2xl border border-purple-400/20 bg-purple-500/10 p-6">
+                <h2 className="text-xl font-semibold text-purple-300">
+                AI Report Summary
+                </h2>
+
+                <p className="mt-3 text-sm leading-6 text-slate-200">
+                {summary}
+                </p>
+            </div>
+            )}
+
+            </section>
         </main>
       </div>
     </div>
