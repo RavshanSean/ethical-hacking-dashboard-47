@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from routes.vulnerability_routes import vulnerability_scan, VulnerabilityScanRequest
+from services.scanner_service import scan_website
 
 router = APIRouter(prefix="/browser-protection", tags=["Browser Protection"])
 
@@ -11,12 +12,16 @@ class BrowserProtectionRequest(BaseModel):
 
 @router.post("/check")
 def check_browser_protection(payload: BrowserProtectionRequest):
-    scan_result = vulnerability_scan(
+    vulnerability_result = vulnerability_scan(
         VulnerabilityScanRequest(url=payload.url)
     )
 
-    score = scan_result.get("score", 0)
-    findings = scan_result.get("findings", [])
+    url_result = scan_website(payload.url)
+
+    vulnerability_score = vulnerability_result.get("score", 0)
+    url_risk_score = url_result.get("risk_score", 0)
+
+    findings = vulnerability_result.get("findings", [])
 
     high_count = len([
         finding for finding in findings
@@ -28,23 +33,99 @@ def check_browser_protection(payload: BrowserProtectionRequest):
         if finding.get("severity") == "MEDIUM"
     ])
 
-    if high_count > 0 or score < 40:
+    suspicious_indicators = url_result.get(
+        "suspicious_domain_indicators",
+        []
+    )
+
+    redirect_count = url_result.get("redirect_count", 0)
+    ssl_info = url_result.get("ssl_intelligence", {})
+    ip_intelligence = url_result.get("ip_intelligence", {})
+
+    if suspicious_indicators:
+        findings.append({
+            "severity": "HIGH",
+            "title": "Suspicious Domain Indicators",
+            "description": ", ".join(suspicious_indicators),
+        })
+
+    if redirect_count >= 3:
+        findings.append({
+            "severity": "MEDIUM",
+            "title": "Multiple Redirects",
+            "description": (
+                f"This website redirects {redirect_count} times before "
+                "reaching the final destination."
+            ),
+        })
+
+    if ssl_info.get("days_left") is not None and ssl_info.get("days_left") < 14:
+        findings.append({
+            "severity": "MEDIUM",
+            "title": "SSL Certificate Expiring Soon",
+            "description": (
+                f"SSL certificate expires in "
+                f"{ssl_info.get('days_left')} days."
+            ),
+        })
+
+    combined_risk = max(
+        url_risk_score,
+        100 - vulnerability_score,
+    )
+
+    if suspicious_indicators:
+        combined_risk = max(combined_risk, 85)
+
+    if high_count > 0 or combined_risk >= 75:
         status = "BLOCKED"
         recommendation = "Do not visit this website."
-    elif medium_count > 0 or score < 75:
+    elif medium_count > 0 or combined_risk >= 40:
         status = "WARNING"
         recommendation = "Use caution before visiting this website."
     else:
         status = "SAFE"
         recommendation = "No major browser protection issues detected."
 
+    high_count = len([
+        finding for finding in findings
+        if finding.get("severity") == "HIGH"
+    ])
+
+    medium_count = len([
+        finding for finding in findings
+        if finding.get("severity") == "MEDIUM"
+    ])
+
     return {
-        "target": scan_result.get("target"),
-        "hostname": scan_result.get("hostname"),
-        "score": score,
+        "target": payload.url,
+        "hostname": url_result.get("domain"),
+        "score": max(0, 100 - combined_risk),
+        "risk_score": combined_risk,
         "status": status,
         "recommendation": recommendation,
-        "ssl": scan_result.get("ssl"),
+        "ssl": {
+            "valid": ssl_info.get("valid"),
+            "issuer": ssl_info.get("issuer"),
+            "expires_at": ssl_info.get("expires_at"),
+            "days_left": ssl_info.get("days_left"),
+        },
+        "network": {
+            "ip": url_result.get("resolved_ip"),
+            "country": ip_intelligence.get("country"),
+            "region": ip_intelligence.get("region"),
+            "city": ip_intelligence.get("city"),
+            "isp": ip_intelligence.get("isp"),
+            "org": ip_intelligence.get("org"),
+            "asn": ip_intelligence.get("asn"),
+        },
+        "redirects": {
+            "count": redirect_count,
+            "chain": url_result.get("redirect_chain"),
+            "final_url": url_result.get("final_url"),
+        },
+        "url_risk_score": url_risk_score,
+        "vulnerability_score": vulnerability_score,
         "findings": findings,
         "summary": {
             "high": high_count,

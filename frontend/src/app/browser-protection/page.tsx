@@ -84,6 +84,7 @@ export default function BrowserProtectionPage() {
 
             {result && (
               <>
+
                 <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-4">
                   <Card
                     icon={<ShieldCheck />}
@@ -109,6 +110,67 @@ export default function BrowserProtectionPage() {
                     title="SSL"
                     value={result.ssl.valid ? "VALID" : "INVALID"}
                   />
+                </div>
+
+                <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-4">
+                  <Card
+                    icon={<AlertTriangle />}
+                    title="Risk Score"
+                    value={`${result.risk_score}/100`}
+                    color={
+                      result.risk_score >= 75
+                        ? "text-red-400"
+                        : result.risk_score >= 40
+                        ? "text-yellow-300"
+                        : "text-emerald-300"
+                    }
+                  />
+
+                  <Card
+                    icon={<ShieldCheck />}
+                    title="URL Risk"
+                    value={`${result.url_risk_score}/100`}
+                  />
+
+                  <Card
+                    icon={<Lock />}
+                    title="Vulnerability Score"
+                    value={`${result.vulnerability_score}/100`}
+                  />
+
+                  <Card
+                    icon={<Globe />}
+                    title="ASN / Provider"
+                    value={result.network?.asn || "Unknown"}
+                  />
+                </div>
+
+                <div className="mt-8 rounded-2xl border border-cyan-400/10 bg-[#07111f]/90 p-6">
+                  <h2 className="text-2xl font-semibold">
+                    Intelligence Details
+                  </h2>
+
+                  <div className="mt-5 grid grid-cols-1 gap-4 text-sm md:grid-cols-2 lg:grid-cols-3">
+                    <InfoRow label="IP Address" value={result.network?.ip} />
+                    <InfoRow label="Country" value={result.network?.country} />
+                    <InfoRow label="City" value={result.network?.city} />
+                    <InfoRow label="ISP" value={result.network?.isp} />
+                    <InfoRow label="Organization" value={result.network?.org} />
+                    <InfoRow label="SSL Issuer" value={result.ssl?.issuer} />
+                    <InfoRow
+                      label="SSL Days Left"
+                      value={
+                        result.ssl?.days_left !== null && result.ssl?.days_left !== undefined
+                          ? String(result.ssl.days_left)
+                          : "Unknown"
+                      }
+                    />
+                    <InfoRow label="Final URL" value={result.redirects?.final_url} />
+                    <InfoRow
+                      label="Redirect Count"
+                      value={String(result.redirects?.count ?? 0)}
+                    />
+                  </div>
                 </div>
 
                 <div className="mt-8 rounded-2xl border border-cyan-400/10 bg-[#07111f]/90 p-6">
@@ -213,6 +275,26 @@ function Card({
       <h3 className={`mt-2 text-xl font-medium ${color}`}>
         {value}
       </h3>
+    </div>
+  );
+}
+
+function InfoRow({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-cyan-400/10 bg-black/35 p-4">
+      <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
+        {label}
+      </p>
+
+      <p className="mt-2 break-all text-sm text-slate-200">
+        {value || "Unknown"}
+      </p>
     </div>
   );
 }
