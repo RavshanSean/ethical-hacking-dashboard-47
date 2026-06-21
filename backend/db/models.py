@@ -62,6 +62,26 @@ class ScanResult(Base):
 
     created_at = Column(String)
     
+class VulnerabilityScanResult(Base):
+    """
+    Stores vulnerability scan history.
+    """
+
+    __tablename__ = "vulnerability_scan_results"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    target = Column(String)
+    hostname = Column(String)
+
+    score = Column(Integer)
+    ssl_valid = Column(Boolean)
+    ssl_days_left = Column(Integer, nullable=True)
+
+    security_headers = Column(String)
+    findings = Column(String)
+
+    created_at = Column(String)
     
 class AppSettings(Base):
     __tablename__ = "app_settings"
