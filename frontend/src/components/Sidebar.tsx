@@ -18,6 +18,7 @@ import {
   Network,
   Lock,
   Box,
+  FileText,
 } from "lucide-react";
 
 const navGroups = [
@@ -45,7 +46,8 @@ const navGroups = [
       { label: "Network", href: "/network", icon: Network },
       { label: "Quarantine", href: "/quarantine", icon: Box },
       { label: "Logs", href: "/logs", icon: ScrollText },
-      { label: "Reports", href: "/analytics", icon: BarChart3 },
+      { label: "Analytics", href: "/analytics", icon: BarChart3 },
+      { label: "Reports", href: "/reports", icon: FileText },
       
     ],
   },
