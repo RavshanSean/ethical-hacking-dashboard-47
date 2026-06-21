@@ -49,7 +49,7 @@ export default function DashboardHeader() {
   }, []);
 
   return (
-    <header className="mb-8 overflow-hidden rounded-[24px] border border-cyan-400/10 bg-[#050b16] shadow-[0_0_45px_rgba(0,255,220,0.05)]">
+    <header className="mb-8 overflow-visible rounded-[24px] border border-cyan-400/10 bg-[#050b16] shadow-[0_0_45px_rgba(0,255,220,0.05)]">
       <div className="flex flex-col gap-6 px-6 py-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.42em] text-cyan-300">
@@ -72,7 +72,6 @@ export default function DashboardHeader() {
             <span className="text-sm">Search threats, scans, logs...</span>
           </div>
 
-          <button className="relative rounded-2xl border border-white/10 bg-black/45 p-3 text-cyan-300 transition hover:border-cyan-300/50 hover:shadow-[0_0_25px_rgba(34,211,238,0.18)]">
 
           <div className="relative">
             <button
@@ -144,7 +143,7 @@ export default function DashboardHeader() {
             )}
           </div>
 
-          </button>
+          
 
           <div className="flex items-center gap-3 rounded-2xl border border-emerald-400/15 bg-black/45 px-4 py-3">
             <ShieldCheck className="text-emerald-400" size={21} />
