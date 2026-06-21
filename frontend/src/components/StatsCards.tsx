@@ -77,18 +77,18 @@ export default function StatsCards({ lastDomain }: StatsCardsProps) {
       />
 
       <StatCard
-        title="Files Scanned"
+        title="Total Events"
         value={String(stats.total_events)}
-        subtitle="Total security events"
+        subtitle="All security events"
         accent="cyan"
         icon={<FileText size={26} />}
         sparkline="cyan"
       />
 
       <StatCard
-        title="Last Scan"
+        title="Live Monitoring"
         value={lastDomain ? "Now" : "Live"}
-        subtitle={lastDomain || "System monitor"}
+        subtitle="Auto-refresh every 5s"
         accent="violet"
         icon={<Clock3 size={26} />}
         sparkline="violet"
