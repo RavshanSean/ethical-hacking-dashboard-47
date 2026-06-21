@@ -19,9 +19,11 @@ type AlertItem = {
 
 export default function DashboardHeader() {
   const router = useRouter();
+
   const [user, setUser] = useState<StoredUser | null>(null);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [alertsOpen, setAlertsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
@@ -31,22 +33,28 @@ export default function DashboardHeader() {
     }
   }, []);
 
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/threat-map/events")
+      .then((response) => response.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setAlerts(data.slice(0, 5));
+        }
+      })
+      .catch((error) => console.error("Alert fetch error:", error));
+  }, []);
+
   function handleLogout() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     router.push("/login");
   }
 
-  useEffect(() => {
-  fetch("http://127.0.0.1:8000/threat-map/events")
-    .then((response) => response.json())
-    .then((data) => {
-      if (Array.isArray(data)) {
-        setAlerts(data.slice(0, 5));
-      }
-    })
-    .catch((error) => console.error("Alert fetch error:", error));
-  }, []);
+  const filteredAlerts = alerts.filter((alert) =>
+    JSON.stringify(alert)
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase())
+  );
 
   return (
     <header className="mb-8 overflow-visible rounded-[24px] border border-cyan-400/10 bg-[#050b16] shadow-[0_0_45px_rgba(0,255,220,0.05)]">
@@ -67,11 +75,20 @@ export default function DashboardHeader() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="hidden min-w-[280px] items-center gap-3 rounded-2xl border border-white/10 bg-black/45 px-4 py-3 text-slate-400 shadow-inner md:flex">
+          <div className="hidden min-w-[360px] items-center gap-3 rounded-2xl border border-white/10 bg-black/45 px-4 py-3 text-slate-400 shadow-inner md:flex">
             <Search size={18} className="text-cyan-300" />
-            <span className="text-sm">Search threats, scans, logs...</span>
-          </div>
 
+            <input
+              type="text"
+              placeholder="Search threats, scans, logs..."
+              value={searchQuery}
+              onChange={(event) => {
+                setSearchQuery(event.target.value);
+                setAlertsOpen(true);
+              }}
+              className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+            />
+          </div>
 
           <div className="relative">
             <button
@@ -95,18 +112,18 @@ export default function DashboardHeader() {
                   </h3>
 
                   <span className="text-xs text-cyan-300">
-                    {alerts.length} active
+                    {filteredAlerts.length} active
                   </span>
                 </div>
 
                 <div className="mt-4 space-y-3">
-                  {alerts.length === 0 && (
+                  {filteredAlerts.length === 0 && (
                     <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/5 p-3 text-sm text-emerald-300">
-                      No active alerts.
+                      No matching alerts.
                     </div>
                   )}
 
-                  {alerts.map((alert) => (
+                  {filteredAlerts.map((alert) => (
                     <div
                       key={alert.id}
                       className="rounded-xl border border-white/5 bg-black/40 p-3"
@@ -121,8 +138,8 @@ export default function DashboardHeader() {
                             alert.severity === "HIGH"
                               ? "text-red-300"
                               : alert.severity === "MEDIUM"
-                              ? "text-yellow-300"
-                              : "text-emerald-300"
+                                ? "text-yellow-300"
+                                : "text-emerald-300"
                           }`}
                         >
                           {alert.severity}
@@ -143,10 +160,9 @@ export default function DashboardHeader() {
             )}
           </div>
 
-          
-
           <div className="flex items-center gap-3 rounded-2xl border border-emerald-400/15 bg-black/45 px-4 py-3">
             <ShieldCheck className="text-emerald-400" size={21} />
+
             <div>
               <p className="text-xs text-slate-500">Protection</p>
               <p className="text-sm font-bold text-emerald-400">Online</p>
