@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Bell, LogOut, Search, ShieldCheck, UserCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { API_BASE_URL } from "@/config/api";
 
 type StoredUser = {
   username: string;
@@ -34,14 +35,29 @@ export default function DashboardHeader() {
   }, []);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/threat-map/events")
-      .then((response) => response.json())
-      .then((data) => {
+    async function loadAlerts() {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/threat-map/events`
+        );
+
+        const data = await response.json();
+
         if (Array.isArray(data)) {
           setAlerts(data.slice(0, 5));
         }
-      })
-      .catch((error) => console.error("Alert fetch error:", error));
+      } catch (error) {
+        console.error("Alert fetch error:", error);
+      }
+    }
+
+    loadAlerts();
+
+    const interval = setInterval(() => {
+      loadAlerts();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   function handleLogout() {
@@ -55,6 +71,30 @@ export default function DashboardHeader() {
       .toLowerCase()
       .includes(searchQuery.toLowerCase())
   );
+
+  const highAlerts = alerts.filter(
+    (alert) => alert.severity === "HIGH"
+  ).length;
+
+  const mediumAlerts = alerts.filter(
+    (alert) => alert.severity === "MEDIUM"
+  ).length;
+
+  const lowAlerts = alerts.filter(
+    (alert) => alert.severity === "LOW"
+  ).length;
+
+  function getBellBadgeColor() {
+    if (highAlerts > 0) {
+      return "bg-red-500 shadow-[0_0_18px_rgba(239,68,68,0.7)]";
+    }
+
+    if (mediumAlerts > 0) {
+      return "bg-yellow-400 text-black shadow-[0_0_18px_rgba(250,204,21,0.55)]";
+    }
+
+    return "bg-emerald-400 text-black shadow-[0_0_18px_rgba(52,211,153,0.55)]";
+  }
 
   return (
     <header className="mb-8 overflow-visible rounded-[24px] border border-cyan-400/10 bg-[#050b16] shadow-[0_0_45px_rgba(0,255,220,0.05)]">
@@ -98,7 +138,9 @@ export default function DashboardHeader() {
               <Bell size={20} />
 
               {alerts.length > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow-[0_0_18px_rgba(239,68,68,0.7)]">
+                <span
+                  className={`absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold ${getBellBadgeColor()}`}
+                >
                   {alerts.length}
                 </span>
               )}
@@ -114,6 +156,23 @@ export default function DashboardHeader() {
                   <span className="text-xs text-cyan-300">
                     {filteredAlerts.length} active
                   </span>
+                </div>
+
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  <div className="rounded-xl border border-red-400/20 bg-red-500/5 p-2 text-center">
+                    <p className="text-xs text-slate-500">High</p>
+                    <p className="text-sm font-bold text-red-300">{highAlerts}</p>
+                  </div>
+
+                  <div className="rounded-xl border border-yellow-400/20 bg-yellow-500/5 p-2 text-center">
+                    <p className="text-xs text-slate-500">Medium</p>
+                    <p className="text-sm font-bold text-yellow-300">{mediumAlerts}</p>
+                  </div>
+
+                  <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/5 p-2 text-center">
+                    <p className="text-xs text-slate-500">Low</p>
+                    <p className="text-sm font-bold text-emerald-300">{lowAlerts}</p>
+                  </div>
                 </div>
 
                 <div className="mt-4 space-y-3">

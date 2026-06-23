@@ -1,5 +1,15 @@
 [
   {
+    "id": "753c171e-48e0-4c0f-835e-0a733dc9096b",
+    "original_filename": "outer.zip",
+    "stored_filename": "753c171e-48e0-4c0f-835e-0a733dc9096b.quarantine",
+    "threat_level": "HIGH",
+    "risk_score": 90,
+    "threat": null,
+    "status": "QUARANTINED",
+    "created_at": 1782067050
+  },
+  {
     "id": "25f0d71a-58ba-4458-a262-2449581362e3",
     "original_filename": "inner.zip",
     "stored_filename": "25f0d71a-58ba-4458-a262-2449581362e3.quarantine",
