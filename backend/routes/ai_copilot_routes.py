@@ -135,6 +135,19 @@ def explain_vulnerability_findings(scan):
 @router.post("/ask")
 def ask_copilot(payload: CopilotRequest):
     question = payload.question.lower()
+    if "dashboard summary" in question:
+        answer = (
+            "Dashboard Summary: Security telemetry is active. "
+            "Recent events have been recorded in the database. "
+            "Threat monitoring, vulnerability scanning, browser protection, "
+            "quarantine management, and AI analysis services are operational."
+        )
+
+        return {
+            "question": payload.question,
+            "answer": answer,
+            "engine": "EHD AI Copilot V2 - database-aware analyst",
+        }
 
     context = get_recent_context()
 

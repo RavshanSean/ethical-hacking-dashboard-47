@@ -4,7 +4,8 @@ import time
 import uuid
 from pathlib import Path
 
-QUARANTINE_DIR = Path("quarantine_storage")
+BASE_DIR = Path(__file__).resolve().parent.parent
+QUARANTINE_DIR = BASE_DIR / "quarantine_storage"
 INDEX_FILE = QUARANTINE_DIR / "index.json"
 
 QUARANTINE_DIR.mkdir(exist_ok=True)
@@ -52,3 +53,31 @@ def quarantine_file(filename: str, file_bytes: bytes, scan_result: dict):
 
 def get_quarantined_files():
     return load_index()
+
+
+def delete_quarantined_file(quarantine_id: str):
+    items = load_index()
+
+    item_to_delete = None
+    remaining_items = []
+
+    for item in items:
+        if item.get("id") == quarantine_id:
+            item_to_delete = item
+        else:
+            remaining_items.append(item)
+
+    if not item_to_delete:
+        return False
+
+    stored_filename = item_to_delete.get("stored_filename")
+
+    if stored_filename:
+        file_path = QUARANTINE_DIR / stored_filename
+
+        if file_path.exists():
+            os.remove(file_path)
+
+    save_index(remaining_items)
+
+    return True

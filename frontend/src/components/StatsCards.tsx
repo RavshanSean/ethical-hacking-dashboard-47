@@ -27,6 +27,9 @@ type BackendStats = {
   low_threats: number;
 };
 
+type Accent = "emerald" | "red" | "cyan" | "violet";
+type Sparkline = "green" | "red" | "cyan" | "violet";
+
 export default function StatsCards({ lastDomain }: StatsCardsProps) {
   const [stats, setStats] = useState<BackendStats>({
     total_events: 0,
@@ -56,21 +59,49 @@ export default function StatsCards({ lastDomain }: StatsCardsProps) {
     return () => clearInterval(interval);
   }, []);
 
+  const protectionStatus =
+    stats.high_threats > 0
+      ? "Critical"
+      : stats.medium_threats > 0
+      ? "Warning"
+      : "Secure";
+
+  const protectionSubtitle =
+    stats.high_threats > 0
+      ? `${stats.high_threats} high-risk events need review`
+      : stats.medium_threats > 0
+      ? `${stats.medium_threats} medium-risk events detected`
+      : "No high-risk events detected";
+
+  const protectionAccent: Accent =
+    stats.high_threats > 0
+      ? "red"
+      : stats.medium_threats > 0
+      ? "violet"
+      : "emerald";
+
+  const protectionSparkline: Sparkline =
+    stats.high_threats > 0
+      ? "red"
+      : stats.medium_threats > 0
+      ? "violet"
+      : "green";
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
       <StatCard
         title="Overall Protection"
-        value="Secure"
-        subtitle="Your system is safe"
-        accent="emerald"
+        value={protectionStatus}
+        subtitle={protectionSubtitle}
+        accent={protectionAccent}
         icon={<ShieldCheck size={26} />}
-        sparkline="green"
+        sparkline={protectionSparkline}
       />
 
       <StatCard
         title="Threats Detected"
         value={String(stats.high_threats)}
-        subtitle={`High: ${stats.high_threats}`}
+        subtitle={`High: ${stats.high_threats} • Medium: ${stats.medium_threats}`}
         accent="red"
         icon={<Bug size={26} />}
         sparkline="red"
@@ -79,7 +110,7 @@ export default function StatsCards({ lastDomain }: StatsCardsProps) {
       <StatCard
         title="Total Events"
         value={String(stats.total_events)}
-        subtitle="All security events"
+        subtitle={`Low: ${stats.low_threats}`}
         accent="cyan"
         icon={<FileText size={26} />}
         sparkline="cyan"
@@ -101,9 +132,9 @@ type StatCardProps = {
   title: string;
   value: string;
   subtitle: string;
-  accent: "emerald" | "red" | "cyan" | "violet";
+  accent: Accent;
   icon: React.ReactNode;
-  sparkline: "green" | "red" | "cyan" | "violet";
+  sparkline: Sparkline;
 };
 
 function StatCard({
@@ -172,11 +203,7 @@ function StatCard({
   );
 }
 
-function MiniSparkline({
-  type,
-}: {
-  type: "green" | "red" | "cyan" | "violet";
-}) {
+function MiniSparkline({ type }: { type: Sparkline }) {
   const stroke = {
     green: "#34d399",
     red: "#f87171",
