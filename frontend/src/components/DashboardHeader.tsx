@@ -18,13 +18,34 @@ type AlertItem = {
   timestamp: string;
 };
 
+type SearchEvent = {
+  id: number;
+  type: string;
+  severity: string;
+  message: string;
+  timestamp: string;
+};
+
+type SearchScan = {
+  id: number;
+  url: string;
+  domain: string;
+  risk_score: number;
+  threat_level: string;
+  created_at: string;
+};
+
 export default function DashboardHeader() {
   const router = useRouter();
 
   const [user, setUser] = useState<StoredUser | null>(null);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [alertsOpen, setAlertsOpen] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchEvents, setSearchEvents] = useState<SearchEvent[]>([]);
+  const [searchScans, setSearchScans] = useState<SearchScan[]>([]);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
@@ -37,10 +58,7 @@ export default function DashboardHeader() {
   useEffect(() => {
     async function loadAlerts() {
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/threat-map/events`
-        );
-
+        const response = await fetch(`${API_BASE_URL}/threat-map/events`);
         const data = await response.json();
 
         if (Array.isArray(data)) {
@@ -60,6 +78,37 @@ export default function DashboardHeader() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    async function runSearch() {
+      if (!searchQuery.trim()) {
+        setSearchEvents([]);
+        setSearchScans([]);
+        setSearchOpen(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/search?q=${encodeURIComponent(searchQuery)}`
+        );
+
+        const data = await response.json();
+
+        setSearchEvents(data.events || []);
+        setSearchScans(data.scans || []);
+        setSearchOpen(true);
+      } catch (error) {
+        console.error("Search failed:", error);
+      }
+    }
+
+    const timeout = setTimeout(() => {
+      runSearch();
+    }, 350);
+
+    return () => clearTimeout(timeout);
+  }, [searchQuery]);
+
   function handleLogout() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -67,22 +116,12 @@ export default function DashboardHeader() {
   }
 
   const filteredAlerts = alerts.filter((alert) =>
-    JSON.stringify(alert)
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase())
+    JSON.stringify(alert).toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const highAlerts = alerts.filter(
-    (alert) => alert.severity === "HIGH"
-  ).length;
-
-  const mediumAlerts = alerts.filter(
-    (alert) => alert.severity === "MEDIUM"
-  ).length;
-
-  const lowAlerts = alerts.filter(
-    (alert) => alert.severity === "LOW"
-  ).length;
+  const highAlerts = alerts.filter((alert) => alert.severity === "HIGH").length;
+  const mediumAlerts = alerts.filter((alert) => alert.severity === "MEDIUM").length;
+  const lowAlerts = alerts.filter((alert) => alert.severity === "LOW").length;
 
   function getBellBadgeColor() {
     if (highAlerts > 0) {
@@ -115,19 +154,122 @@ export default function DashboardHeader() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="hidden min-w-[360px] items-center gap-3 rounded-2xl border border-white/10 bg-black/45 px-4 py-3 text-slate-400 shadow-inner md:flex">
-            <Search size={18} className="text-cyan-300" />
+          <div className="relative hidden min-w-[360px] md:block">
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/45 px-4 py-3 text-slate-400 shadow-inner">
+              <Search size={18} className="text-cyan-300" />
 
-            <input
-              type="text"
-              placeholder="Search threats, scans, logs..."
-              value={searchQuery}
-              onChange={(event) => {
-                setSearchQuery(event.target.value);
-                setAlertsOpen(true);
-              }}
-              className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
-            />
+              <input
+                type="text"
+                placeholder="Search threats, scans, logs..."
+                value={searchQuery}
+                onChange={(event) => {
+                  setSearchQuery(event.target.value);
+                  setSearchOpen(true);
+                }}
+                className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+              />
+            </div>
+
+            {searchOpen && searchQuery.trim() && (
+              <div className="absolute left-0 z-50 mt-3 w-[460px] rounded-2xl border border-cyan-400/10 bg-[#07111f] p-4 shadow-[0_0_35px_rgba(34,211,238,0.12)]">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-white">
+                    Search Results
+                  </h3>
+
+                  <button
+                    onClick={() => setSearchOpen(false)}
+                    className="text-xs text-slate-500 hover:text-cyan-300"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.25em] text-cyan-300">
+                      Events
+                    </p>
+
+                    <div className="mt-2 space-y-2">
+                      {searchEvents.length === 0 && (
+                        <p className="rounded-xl border border-white/5 bg-black/30 p-3 text-xs text-slate-500">
+                          No matching events.
+                        </p>
+                      )}
+
+                      {searchEvents.map((event) => (
+                        <div
+                          key={`event-${event.id}`}
+                          className="rounded-xl border border-white/5 bg-black/40 p-3"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs font-semibold text-cyan-300">
+                              {event.type.replaceAll("_", " ")}
+                            </p>
+
+                            <span
+                              className={`text-xs font-bold ${
+                                event.severity === "HIGH"
+                                  ? "text-red-300"
+                                  : event.severity === "MEDIUM"
+                                  ? "text-yellow-300"
+                                  : "text-emerald-300"
+                              }`}
+                            >
+                              {event.severity}
+                            </span>
+                          </div>
+
+                          <p className="mt-2 text-xs text-slate-300">
+                            {event.message}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.25em] text-cyan-300">
+                      Scan Results
+                    </p>
+
+                    <div className="mt-2 space-y-2">
+                      {searchScans.length === 0 && (
+                        <p className="rounded-xl border border-white/5 bg-black/30 p-3 text-xs text-slate-500">
+                          No matching scans.
+                        </p>
+                      )}
+
+                      {searchScans.map((scan) => (
+                        <div
+                          key={`scan-${scan.id}`}
+                          className="rounded-xl border border-white/5 bg-black/40 p-3"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs font-semibold text-white">
+                              {scan.domain}
+                            </p>
+
+                            <span className="text-xs font-bold text-cyan-300">
+                              {scan.risk_score}/100
+                            </span>
+                          </div>
+
+                          <p className="mt-2 break-all text-xs text-slate-400">
+                            {scan.url}
+                          </p>
+
+                          <p className="mt-1 text-xs text-slate-500">
+                            {scan.threat_level}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="relative">
@@ -197,8 +339,8 @@ export default function DashboardHeader() {
                             alert.severity === "HIGH"
                               ? "text-red-300"
                               : alert.severity === "MEDIUM"
-                                ? "text-yellow-300"
-                                : "text-emerald-300"
+                              ? "text-yellow-300"
+                              : "text-emerald-300"
                           }`}
                         >
                           {alert.severity}

@@ -19,6 +19,7 @@ from routes.quarantine_routes import router as quarantine_router
 from routes.browser_protection_routes import router as browser_protection_router
 from routes.ip_lookup_routes import router as ip_lookup_router
 from routes.ai_copilot_routes import router as ai_copilot_router
+from routes.search_routes import router as search_router
 
 # Create FastAPI app
 app = FastAPI()
@@ -39,6 +40,7 @@ app.include_router(quarantine_router)
 app.include_router(browser_protection_router)
 app.include_router(ip_lookup_router)
 app.include_router(ai_copilot_router)
+app.include_router(search_router)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
