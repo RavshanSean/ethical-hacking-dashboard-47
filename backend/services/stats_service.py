@@ -4,6 +4,7 @@ from db.database import SessionLocal
 from db.models import SecurityEvent
 
 
+
 def calculate_stats():
 
     db = SessionLocal()
@@ -70,5 +71,30 @@ def calculate_timeline_stats():
                 "total": values["TOTAL"],
             }
             for time, values in sorted(timeline.items())
+        ]
+    }
+    
+def get_recent_threats(limit: int = 5):
+    db = SessionLocal()
+
+    events = (
+        db.query(SecurityEvent)
+        .order_by(SecurityEvent.id.desc())
+        .limit(limit)
+        .all()
+    )
+
+    db.close()
+
+    return {
+        "threats": [
+            {
+                "id": event.id,
+                "type": event.event_type,
+                "severity": event.severity,
+                "message": event.message,
+                "timestamp": event.timestamp,
+            }
+            for event in events
         ]
     }
