@@ -40,6 +40,7 @@ export default function RecentScans() {
     useState<FullScanReport | null>(null);
   const [threatFilter, setThreatFilter] =
     useState<ThreatFilter>("ALL");
+  const [search, setSearch] = useState("");
 
   async function loadScans() {
     try {
@@ -71,6 +72,12 @@ export default function RecentScans() {
       console.error("Failed to load scan detail:", error);
     }
   }
+
+  const filteredScans = scans.filter((scan) =>
+    JSON.stringify(scan)
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
 
   useEffect(() => {
     loadScans();
@@ -116,13 +123,20 @@ export default function RecentScans() {
         )}
       </div>
 
+      <input
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+        placeholder="Search domains, URLs, registrars..."
+        className="mt-4 w-full rounded-xl border border-green-500/20 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-gray-500"
+      />
+
       <div className="mt-5 max-h-[300px] space-y-3 overflow-y-auto pr-2">
-        {scans.length === 0 ? (
+        {filteredScans.length === 0 ? (
           <p className="text-sm text-gray-500">
             No saved scans for this filter.
           </p>
         ) : (
-          scans.map((scan) => (
+          filteredScans.map((scan) => (
             <button
               key={scan.id}
               onClick={() => loadScanDetails(scan.id)}
