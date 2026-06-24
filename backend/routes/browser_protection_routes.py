@@ -96,6 +96,25 @@ def check_browser_protection(payload: BrowserProtectionRequest):
         finding for finding in findings
         if finding.get("severity") == "MEDIUM"
     ])
+    
+    explanation = (
+        f"Browser Protection reviewed URL reputation, vulnerability findings, "
+        f"SSL status, redirects, hosting intelligence, and suspicious domain indicators. "
+        f"Final verdict: {status}. "
+    )
+
+    if status == "BLOCKED":
+        explanation += (
+            "This site should be avoided because it has high-risk signals or severe findings."
+        )
+    elif status == "WARNING":
+        explanation += (
+            "This site is not immediately blocked, but it has security weaknesses that require caution."
+        )
+    else:
+        explanation += (
+            "No major browser protection issues were detected."
+        )
 
     return {
         "target": payload.url,
@@ -104,6 +123,7 @@ def check_browser_protection(payload: BrowserProtectionRequest):
         "risk_score": combined_risk,
         "status": status,
         "recommendation": recommendation,
+        "explanation": explanation,
         "ssl": {
             "valid": ssl_info.get("valid"),
             "issuer": ssl_info.get("issuer"),

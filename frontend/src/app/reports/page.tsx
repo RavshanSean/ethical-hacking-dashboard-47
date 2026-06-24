@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
+import { API_BASE_URL } from "@/config/api";
 
 export default function ReportsPage() {
   const [status, setStatus] = useState("");
@@ -9,7 +10,7 @@ export default function ReportsPage() {
   const [summary, setSummary] = useState("");
 
 useEffect(() => {
-  fetch("http://127.0.0.1:8000/threat-map/events")
+  fetch("`${API_BASE_URL}/threat-map/events`")
     .then((response) => response.json())
     .then((data) => {
       if (Array.isArray(data)) {
@@ -23,7 +24,7 @@ useEffect(() => {
     setStatus("Preparing JSON report...");
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/threat-map/events");
+      const response = await fetch("`${API_BASE_URL}/threat-map/events`");
       const data = await response.json();
 
       const report = {

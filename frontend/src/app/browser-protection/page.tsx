@@ -181,6 +181,11 @@ export default function BrowserProtectionPage() {
                   <p className="mt-3 text-slate-300">
                     {result.recommendation}
                   </p>
+
+                  <p className="mt-4 text-sm leading-6 text-slate-400">
+                    {result.explanation}
+                  </p>
+
                 </div>
 
                 <div className="mt-8 rounded-2xl border border-cyan-400/10 bg-[#07111f]/90 p-6">
