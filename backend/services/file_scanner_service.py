@@ -6,6 +6,7 @@ from io import BytesIO
 import os
 import subprocess
 import tempfile
+from services.hash_reputation_service import check_hash_reputation
 
 
 DANGEROUS_EXTENSIONS = [
@@ -343,12 +344,20 @@ def analyze_file(filename: str, file_bytes: bytes):
 
     file_size = len(file_bytes)
     sha256_hash = hashlib.sha256(file_bytes).hexdigest()
+    hash_reputation = check_hash_reputation(sha256_hash)
 
     detected_file_type = detect_file_signature(file_bytes)
     entropy = calculate_entropy(file_bytes)
     script_matches = detect_script_patterns(file_bytes)
     zip_findings = inspect_zip_contents(file_bytes)
     clamav_result = scan_with_clamav(filename, file_bytes)
+    
+    if hash_reputation["status"] == "KNOWN_MALICIOUS":
+        risk_score = 100
+        reasons.insert(
+            0,
+            f"Known malicious file hash detected: {hash_reputation['threat']}"
+        )
 
     for extension in DANGEROUS_EXTENSIONS:
         if lower_name.endswith(extension):
@@ -437,6 +446,7 @@ def analyze_file(filename: str, file_bytes: bytes):
         "filename": filename,
         "file_size": file_size,
         "sha256": sha256_hash,
+        "hash_reputation": hash_reputation,
         "risk_score": risk_score,
         "threat_level": threat_level,
         "reasons": reasons,

@@ -4,3 +4,19 @@ __pycache__/
 
 .env
 backend/.env
+
+# Next.js
+frontend/.next/
+frontend/node_modules/
+
+# Python cache
+**/__pycache__/
+
+# macOS
+.DS_Store
+
+# VSCode
+.vscode/
+
+# Logs
+*.log
