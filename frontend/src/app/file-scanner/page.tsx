@@ -2,7 +2,6 @@
 
 import { API_BASE_URL } from "@/config/api";
 import { useRef, useState } from "react";
-
 import Sidebar from "@/components/Sidebar";
 import {
   FileWarning,
@@ -12,26 +11,7 @@ import {
   ScanSearch,
 } from "lucide-react";
 
-const mockFindings = [
-  {
-    file: "invoice.exe",
-    threat: "Trojan Detected",
-    level: "HIGH",
-  },
-  {
-    file: "payload.zip",
-    threat: "Suspicious Archive",
-    level: "MEDIUM",
-  },
-  {
-    file: "photo.png",
-    threat: "Clean File",
-    level: "LOW",
-  },
-];
-
 export default function FileScannerPage() {
-
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [scanResult, setScanResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -39,13 +19,13 @@ export default function FileScannerPage() {
   const reportRef = useRef<HTMLDivElement | null>(null);
 
   async function scanFile() {
-  if (!selectedFile) return;
+    if (!selectedFile) return;
 
-  setLoading(true);
-  setError("");
+    setLoading(true);
+    setError("");
 
-  const formData = new FormData();
-  formData.append("file", selectedFile);
+    const formData = new FormData();
+    formData.append("file", selectedFile);
 
     try {
       const response = await fetch(`${API_BASE_URL}/scan-file`, {
@@ -66,13 +46,17 @@ export default function FileScannerPage() {
           block: "start",
         });
       }, 100);
-
     } catch {
       setError("File scan failed. Please try another file.");
     } finally {
       setLoading(false);
     }
   }
+
+  const threatCount = scanResult?.threat_level === "HIGH" ? 1 : 0;
+  const suspiciousCount = scanResult?.threat_level === "MEDIUM" ? 1 : 0;
+  const filesScanned = scanResult ? 1 : 0;
+  const uploadQueue = selectedFile && !scanResult ? 1 : 0;
 
   return (
     <div className="min-h-screen bg-[#050816] text-white">
@@ -92,13 +76,12 @@ export default function FileScannerPage() {
                 </h1>
 
                 <p className="mt-3 max-w-3xl text-gray-400">
-                  Upload files for malware detection,
-                  suspicious behavior analysis, and
-                  threat classification.
+                  Upload files for malware detection, suspicious behavior
+                  analysis, and threat classification.
                 </p>
               </div>
 
-              <div className="hidden md:flex items-center gap-3 rounded-2xl border border-orange-500/20 bg-[#0b1220] px-5 py-4">
+              <div className="hidden items-center gap-3 rounded-2xl border border-orange-500/20 bg-[#0b1220] px-5 py-4 md:flex">
                 <Bug className="text-orange-300" size={28} />
 
                 <div>
@@ -113,69 +96,45 @@ export default function FileScannerPage() {
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 xl:grid-cols-4 gap-6">
-              <div className="rounded-2xl border border-red-500/20 bg-[#0b1220] p-5">
-                <div className="flex items-center gap-3">
-                  <ShieldAlert className="text-red-400" />
+            <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-4">
+              <StatCard
+                title="Threats Found"
+                value={threatCount}
+                icon={<ShieldAlert className="text-red-400" />}
+                textColor="text-red-400"
+                borderColor="border-red-500/20"
+              />
 
-                  <p className="text-sm text-gray-400">
-                    Threats Found
-                  </p>
-                </div>
+              <StatCard
+                title="Suspicious Files"
+                value={suspiciousCount}
+                icon={<FileWarning className="text-yellow-300" />}
+                textColor="text-yellow-300"
+                borderColor="border-yellow-500/20"
+              />
 
-                <p className="mt-4 text-4xl font-bold text-red-400">
-                  7
-                </p>
-              </div>
+              <StatCard
+                title="Files Scanned"
+                value={filesScanned}
+                icon={<ScanSearch className="text-green-400" />}
+                textColor="text-green-400"
+                borderColor="border-green-500/20"
+              />
 
-              <div className="rounded-2xl border border-yellow-500/20 bg-[#0b1220] p-5">
-                <div className="flex items-center gap-3">
-                  <FileWarning className="text-yellow-300" />
-
-                  <p className="text-sm text-gray-400">
-                    Suspicious Files
-                  </p>
-                </div>
-
-                <p className="mt-4 text-4xl font-bold text-yellow-300">
-                  14
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-green-500/20 bg-[#0b1220] p-5">
-                <div className="flex items-center gap-3">
-                  <ScanSearch className="text-green-400" />
-
-                  <p className="text-sm text-gray-400">
-                    Files Scanned
-                  </p>
-                </div>
-
-                <p className="mt-4 text-4xl font-bold text-green-400">
-                  392
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-cyan-500/20 bg-[#0b1220] p-5">
-                <div className="flex items-center gap-3">
-                  <Upload className="text-cyan-300" />
-
-                  <p className="text-sm text-gray-400">
-                    Upload Queue
-                  </p>
-                </div>
-
-                <p className="mt-4 text-4xl font-bold text-cyan-300">
-                  3
-                </p>
-              </div>
+              <StatCard
+                title="Upload Queue"
+                value={uploadQueue}
+                icon={<Upload className="text-cyan-300" />}
+                textColor="text-cyan-300"
+                borderColor="border-cyan-500/20"
+              />
             </div>
 
-            <div className="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
-              <div className="xl:col-span-2 rounded-2xl border border-orange-500/20 bg-[#0b1220] p-6">
+            <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
+              <div className="rounded-2xl border border-orange-500/20 bg-[#0b1220] p-6 xl:col-span-2">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-semibold text-orange-300">
-                    Upload Malware Sample
+                    Upload File
                   </h2>
 
                   <span className="rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1 text-xs text-orange-300">
@@ -184,26 +143,24 @@ export default function FileScannerPage() {
                 </div>
 
                 <div className="mt-6 flex h-[400px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-orange-500/20 bg-black">
-                  <Upload
-                    className="text-orange-300"
-                    size={70}
-                  />
+                  <Upload className="text-orange-300" size={70} />
 
                   <p className="mt-6 text-2xl font-bold text-orange-300">
                     Drag & Drop Files
                   </p>
 
                   <p className="mt-3 max-w-md text-center text-sm text-gray-500">
-                    Upload executable files, archives,
-                    documents, or suspicious payloads for
-                    behavioral and signature analysis.
+                    Upload executables, archives, documents, scripts, or
+                    suspicious payloads for static analysis.
                   </p>
 
                   <input
                     type="file"
-                    onChange={(event) =>
-                      setSelectedFile(event.target.files?.[0] || null)
-                    }
+                    onChange={(event) => {
+                      setSelectedFile(event.target.files?.[0] || null);
+                      setScanResult(null);
+                      setError("");
+                    }}
                     className="mt-6 block w-full max-w-md rounded-xl border border-orange-500/20 bg-black p-3 text-sm text-gray-300"
                   />
 
@@ -216,7 +173,7 @@ export default function FileScannerPage() {
                   </button>
                 </div>
 
-                  {error && (
+                {error && (
                   <div className="mt-5 rounded-xl border border-red-500/30 bg-black p-4 text-sm text-red-400">
                     {error}
                   </div>
@@ -231,7 +188,7 @@ export default function FileScannerPage() {
                       File Scan Report
                     </h3>
 
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-300">
+                    <div className="mt-4 grid grid-cols-1 gap-3 text-sm text-gray-300 md:grid-cols-2">
                       <p>Filename: {scanResult.filename}</p>
                       <p>Entropy: {scanResult.entropy}</p>
                       <p>Type: {scanResult.detected_file_type}</p>
@@ -239,12 +196,12 @@ export default function FileScannerPage() {
                       <p>Threat: {scanResult.threat_level}</p>
                       <p>Size: {scanResult.file_size} bytes</p>
                       <p>Engine: {scanResult.engine_version}</p>
+                      <p>Status: {scanResult.status}</p>
                     </div>
 
                     <div className="mt-4 rounded-lg border border-orange-500/10 bg-[#050816] p-3">
-                      <p className="text-xs text-gray-500">
-                        SHA256
-                      </p>
+                      <p className="text-xs text-gray-500">SHA256</p>
+
                       <p className="mt-1 break-all text-xs text-orange-200">
                         {scanResult.sha256}
                       </p>
@@ -258,11 +215,21 @@ export default function FileScannerPage() {
 
                         <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-gray-300 md:grid-cols-2">
                           <p>Status: {scanResult.hash_reputation.status}</p>
-                          <p>Known: {String(scanResult.hash_reputation.known)}</p>
-                          <p>Threat: {scanResult.hash_reputation.threat || "None"}</p>
-                          <p>Category: {scanResult.hash_reputation.category}</p>
+                          <p>
+                            Known:{" "}
+                            {String(scanResult.hash_reputation.known)}
+                          </p>
+                          <p>
+                            Threat:{" "}
+                            {scanResult.hash_reputation.threat || "None"}
+                          </p>
+                          <p>
+                            Category: {scanResult.hash_reputation.category}
+                          </p>
                           <p>Source: {scanResult.hash_reputation.source}</p>
-                          <p>Risk: {scanResult.hash_reputation.risk_score}/100</p>
+                          <p>
+                            Risk: {scanResult.hash_reputation.risk_score}/100
+                          </p>
                         </div>
                       </div>
                     )}
@@ -285,25 +252,24 @@ export default function FileScannerPage() {
                       </p>
 
                       <ul className="mt-2 space-y-1 text-sm text-gray-300">
-                        {scanResult.reasons.map(
+                        {scanResult.reasons?.map(
                           (reason: string, index: number) => (
                             <li key={index}>• {reason}</li>
                           )
                         )}
                       </ul>
                     </div>
+
                     {scanResult.archive_findings?.length > 0 && (
                       <div className="mt-6">
-                        <h3 className="text-orange-400 font-semibold mb-2">
+                        <h3 className="mb-2 font-semibold text-orange-400">
                           Archive Findings
                         </h3>
 
                         <ul className="space-y-2 text-sm text-orange-200">
                           {scanResult.archive_findings.map(
                             (finding: string, index: number) => (
-                              <li key={index}>
-                                • {finding}
-                              </li>
+                              <li key={index}>• {finding}</li>
                             )
                           )}
                         </ul>
@@ -312,7 +278,7 @@ export default function FileScannerPage() {
 
                     {scanResult.suspicious_script_patterns?.length > 0 && (
                       <div className="mt-6">
-                        <h3 className="text-red-400 font-semibold mb-2">
+                        <h3 className="mb-2 font-semibold text-red-400">
                           Suspicious Script Patterns
                         </h3>
 
@@ -321,7 +287,7 @@ export default function FileScannerPage() {
                             (pattern: string, index: number) => (
                               <span
                                 key={index}
-                                className="px-3 py-1 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs"
+                                className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs text-red-300"
                               >
                                 {pattern}
                               </span>
@@ -332,55 +298,86 @@ export default function FileScannerPage() {
                     )}
                   </div>
                 )}
-
               </div>
 
               <div className="rounded-2xl border border-green-500/20 bg-[#0b1220] p-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-green-300">
-                    Analysis Feed
-                  </h2>
+                <h2 className="text-xl font-semibold text-green-300">
+                  Latest Scan
+                </h2>
 
-                  <span className="text-xs text-green-400">
-                    LIVE
-                  </span>
-                </div>
+                <p className="mt-2 text-sm text-gray-500">
+                  Displays the most recently completed file analysis.
+                </p>
 
-                <div className="mt-5 space-y-4">
-                  {mockFindings.map((item, index) => (
-                    <div
-                      key={index}
-                      className="rounded-xl border border-green-500/10 bg-black p-4"
-                    >
-                      <div className="flex items-center justify-between">
-                        <p className="font-semibold text-white">
-                          {item.file}
-                        </p>
+                {scanResult ? (
+                  <div className="mt-5 rounded-xl border border-green-500/20 bg-black/40 p-4">
+                    <p className="font-semibold text-white">
+                      {scanResult.filename}
+                    </p>
 
+                    <div className="mt-3 space-y-2 text-sm text-gray-300">
+                      <p>
+                        Threat:{" "}
                         <span
-                          className={`text-xs font-bold ${
-                            item.level === "HIGH"
-                              ? "text-red-400"
-                              : item.level === "MEDIUM"
+                          className={
+                            scanResult.threat_level === "HIGH"
+                              ? "text-red-300"
+                              : scanResult.threat_level === "MEDIUM"
                               ? "text-yellow-300"
-                              : "text-green-400"
-                          }`}
+                              : "text-green-300"
+                          }
                         >
-                          {item.level}
+                          {scanResult.threat_level}
                         </span>
-                      </div>
-
-                      <p className="mt-2 text-sm text-gray-400">
-                        {item.threat}
                       </p>
+
+                      <p>Risk Score: {scanResult.risk_score}/100</p>
+                      <p>Status: {scanResult.status}</p>
+                      <p>Engine: {scanResult.engine_version}</p>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ) : (
+                  <div className="mt-5 rounded-xl border border-white/5 bg-black/40 p-4">
+                    <p className="text-sm text-gray-500">
+                      No file scanned yet.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </section>
         </main>
       </div>
+    </div>
+  );
+}
+
+function StatCard({
+  title,
+  value,
+  icon,
+  textColor,
+  borderColor,
+}: {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+  textColor: string;
+  borderColor: string;
+}) {
+  return (
+    <div className={`rounded-2xl border ${borderColor} bg-[#0b1220] p-5`}>
+      <div className="flex items-center gap-3">
+        {icon}
+
+        <p className="text-sm text-gray-400">
+          {title}
+        </p>
+      </div>
+
+      <p className={`mt-4 text-4xl font-bold ${textColor}`}>
+        {value}
+      </p>
     </div>
   );
 }
