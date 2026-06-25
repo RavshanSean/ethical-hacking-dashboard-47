@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import dynamic from "next/dynamic";
+import { API_BASE_URL } from "@/config/api";
+
 
 const ThreatMapClient = dynamic(
   () => import("@/components/ThreatMapClient"),
@@ -19,28 +21,37 @@ import {
 } from "lucide-react";
 
 export default function ThreatMapPage() {
-  const [threats, setThreats] = useState<any[]>([]);
 
-  const highThreats = threats.filter(
-    (threat) => threat.severity === "HIGH"
-  ).length;
+  const [summary, setSummary] = useState<any>(null);
+  const [unmappedEvents, setUnmappedEvents] = useState<any[]>([]);
 
-  const activeIncidents = threats.length;
+  const highThreats = summary?.high_events || 0;
 
-  const regionsMonitored = new Set(
-    threats.map((threat) => threat.country)
-  ).size;
+  const activeIncidents = summary?.total_events || 0;
 
-  const telemetryNodes = threats.length;
+  const regionsMonitored = summary?.countries?.length || 0;
+
+  const telemetryNodes = summary?.mapped_events || 0;
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/threat-map/events")
+    fetch(`${API_BASE_URL}/threat-map/summary`)
       .then((response) => response.json())
       .then((data) => {
-        setThreats(data);
+        setSummary(data);
       })
       .catch((error) => {
-        console.error("Threat map fetch error:", error);
+        console.error("Threat map summary fetch error:", error);
+      });
+  }, []);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/threat-map/unmapped-events`)
+      .then((response) => response.json())
+      .then((data) => {
+        setUnmappedEvents(data.items || []);
+      })
+      .catch((error) => {
+        console.error("Unmapped events fetch error:", error);
       });
   }, []);
 
@@ -50,22 +61,34 @@ export default function ThreatMapPage() {
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
-      const liveThreat = {
-        id: Date.now(),
-        country: "United States",
-        city: "New York",
-        latitude: 40.7128,
-        longitude: -74.006,
-        threat_type: data.type,
-        severity: data.severity,
-        message: data.message,
-        timestamp: data.timestamp,
-      };
+    const hasRealGeo =
+      data.country &&
+      data.country !== "Unknown" &&
+      data.city &&
+      data.city !== "Unknown" &&
+      data.latitude !== null &&
+      data.latitude !== undefined &&
+      data.longitude !== null &&
+      data.longitude !== undefined;
 
-      setThreats((previousThreats) => [
-        liveThreat,
-        ...previousThreats.slice(0, 9),
-      ]);
+    if (!hasRealGeo) return;
+
+    const liveThreat = {
+      id: Date.now(),
+      country: data.country,
+      city: data.city,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      threat_type: data.type,
+      severity: data.severity,
+      message: data.message,
+      timestamp: data.timestamp,
+    };
+
+    setThreats((previousThreats) => [
+      liveThreat,
+      ...previousThreats.slice(0, 9),
+    ]);
     };
 
     socket.onerror = (error) => {
@@ -148,6 +171,7 @@ export default function ThreatMapPage() {
                 textColor="text-cyan-300"
               />
             </div>
+            
 
             <div className="mt-6">
               <div className="rounded-2xl border border-cyan-500/20 bg-[#0b1220] p-6">
@@ -164,6 +188,43 @@ export default function ThreatMapPage() {
                 <ThreatMapClient />
               </div>
             </div>
+
+            {unmappedEvents.length > 0 && (
+              <div className="mt-6 rounded-2xl border border-yellow-500/20 bg-[#0b1220] p-6">
+                <h2 className="text-xl font-semibold text-yellow-300">
+                  Events Without Location
+                </h2>
+
+                <p className="mt-2 text-sm text-slate-400">
+                  These are real security events, but no verified geo coordinates were available.
+                </p>
+
+                <div className="mt-4 space-y-3">
+                  {unmappedEvents.slice(0, 6).map((event) => (
+                    <div
+                      key={event.id}
+                      className="rounded-xl border border-white/5 bg-black/35 p-4"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-white">
+                          {event.threat_type}
+                        </p>
+
+                        <span className="text-xs font-bold text-yellow-300">
+                          {event.severity}
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-sm text-slate-400">
+                        {event.message}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+
           </section>
         </main>
       </div>

@@ -1,92 +1,149 @@
-from fastapi import APIRouter
+from collections import Counter
+
+from fastapi import APIRouter, Query
 
 from services.event_service import get_recent_events
 
 router = APIRouter()
 
 
-LOCATION_POOL = [
-    {
-        "country": "United States",
-        "city": "New York",
-        "latitude": 40.7128,
-        "longitude": -74.0060,
-    },
-    {
-        "country": "Germany",
-        "city": "Frankfurt",
-        "latitude": 50.1109,
-        "longitude": 8.6821,
-    },
-    {
-        "country": "Brazil",
-        "city": "São Paulo",
-        "latitude": -23.5558,
-        "longitude": -46.6396,
-    },
-    {
-        "country": "Japan",
-        "city": "Tokyo",
-        "latitude": 35.6762,
-        "longitude": 139.6503,
-    },
-    {
-        "country": "United Kingdom",
-        "city": "London",
-        "latitude": 51.5072,
-        "longitude": -0.1276,
-    },
+MAP_EVENT_TYPES = [
+    "HIGH_RISK_URL",
+    "FILE_QUARANTINED",
+    "MALWARE_DETECTED",
+    "CRITICAL_VULNERABILITY",
+    "DANGEROUS_IP_CONNECTION",
+    "FILE_SCAN",
 ]
 
 
-@router.get("/threat-map/events")
-async def get_threat_map_events():
-    recent_events = get_recent_events(limit=25)
+def has_real_geo(event: dict):
+    return (
+        event.get("country")
+        and event.get("country") != "Unknown"
+        and event.get("city")
+        and event.get("city") != "Unknown"
+        and event.get("latitude") is not None
+        and event.get("longitude") is not None
+    )
 
+
+def build_map_events(limit: int = 100):
+    recent_events = get_recent_events(limit=limit)
     map_events = []
+    unmapped_events = []
 
-    for index, event in enumerate(recent_events):
-        
-        if event["type"] not in [
-            "HIGH_RISK_URL",
-            "FILE_QUARANTINED",
-            "MALWARE_DETECTED",
-            "CRITICAL_VULNERABILITY",
-            "DANGEROUS_IP_CONNECTION",
-        ]:
+    for event in recent_events:
+        if event["type"] not in MAP_EVENT_TYPES:
             continue
 
-        fallback = LOCATION_POOL[index % len(LOCATION_POOL)]
-
-        has_real_geo = (
-            event.get("country")
-            and event.get("country") != "Unknown"
-            and event.get("city")
-            and event.get("city") != "Unknown"
-            and event.get("latitude") is not None
-            and event.get("longitude") is not None
-        )
-
-        location = {
-            "country": event.get("country") if has_real_geo else fallback["country"],
-            "city": event.get("city") if has_real_geo else fallback["city"],
-            "latitude": event.get("latitude") if has_real_geo else fallback["latitude"],
-            "longitude": event.get("longitude") if has_real_geo else fallback["longitude"],
+        base_event = {
+            "threat_type": event["type"],
+            "severity": event["severity"],
+            "message": event["message"],
+            "timestamp": event["timestamp"],
+            "country": event.get("country") or "Unknown",
+            "city": event.get("city") or "Unknown",
+            "latitude": event.get("latitude"),
+            "longitude": event.get("longitude"),
         }
-         
 
-        map_events.append(
-            {
-                "id": len(map_events) + 1,
-                "country": location["country"],
-                "city": location["city"],
-                "latitude": location["latitude"],
-                "longitude": location["longitude"],
-                "threat_type": event["type"],
-                "severity": event["severity"],
-                "message": event["message"],
-                "timestamp": event["timestamp"],
-            }
-        )
+        if has_real_geo(event):
+            map_events.append(
+                {
+                    "id": len(map_events) + 1,
+                    **base_event,
+                    "geo_source": "real",
+                    "mapped": True,
+                }
+            )
+        else:
+            unmapped_events.append(
+                {
+                    "id": len(unmapped_events) + 1,
+                    **base_event,
+                    "geo_source": "unavailable",
+                    "mapped": False,
+                }
+            )
+
+    return map_events, unmapped_events
+
+
+@router.get("/threat-map/events")
+async def get_threat_map_events(
+    severity: str | None = Query(default=None),
+    event_type: str | None = Query(default=None),
+):
+    map_events, _ = build_map_events(limit=100)
+
+    if severity and severity != "ALL":
+        map_events = [
+            event for event in map_events
+            if event["severity"] == severity
+        ]
+
+    if event_type and event_type != "ALL":
+        map_events = [
+            event for event in map_events
+            if event["threat_type"] == event_type
+        ]
 
     return map_events
+
+
+@router.get("/threat-map/unmapped-events")
+async def get_unmapped_threat_events():
+    _, unmapped_events = build_map_events(limit=100)
+
+    return {
+        "items": unmapped_events,
+        "total": len(unmapped_events),
+    }
+
+
+@router.get("/threat-map/summary")
+async def get_threat_map_summary():
+    map_events, unmapped_events = build_map_events(limit=100)
+
+    all_events = map_events + unmapped_events
+
+    country_counts = Counter(
+        event["country"]
+        for event in map_events
+    )
+
+    type_counts = Counter(
+        event["threat_type"]
+        for event in all_events
+    )
+
+    severity_counts = Counter(
+        event["severity"]
+        for event in all_events
+    )
+
+    return {
+        "total_events": len(all_events),
+        "mapped_events": len(map_events),
+        "unmapped_events": len(unmapped_events),
+        "high_events": severity_counts.get("HIGH", 0),
+        "medium_events": severity_counts.get("MEDIUM", 0),
+        "low_events": severity_counts.get("LOW", 0),
+        "countries": [
+            {
+                "country": country,
+                "count": count,
+            }
+            for country, count in country_counts.most_common(5)
+        ],
+        "top_threat_types": [
+            {
+                "type": threat_type,
+                "count": count,
+            }
+            for threat_type, count in type_counts.most_common(5)
+        ],
+        "severity_distribution": dict(severity_counts),
+        "event_categories": MAP_EVENT_TYPES,
+    }

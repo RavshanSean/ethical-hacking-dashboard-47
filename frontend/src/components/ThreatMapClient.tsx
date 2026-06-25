@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/config/api";
 
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -65,7 +66,7 @@ export default function ThreatMapClient() {
   const [showIpMarker, setShowIpMarker] = useState(false);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/threat-map/events")
+    fetch(`${API_BASE_URL}/threat-map/events`)
       .then((response) => response.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -84,7 +85,7 @@ export default function ThreatMapClient() {
     setShowIpMarker(false);
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/ip-lookup/${ip}`);
+      const response = await fetch(`${API_BASE_URL}/ip-lookup/${ip}`)
       const data = await response.json();
 
       if (data.error || data.lat === null || data.lon === null) {
