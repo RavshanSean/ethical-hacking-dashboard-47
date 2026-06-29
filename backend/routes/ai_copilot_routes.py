@@ -9,6 +9,7 @@ from db.models import (
     VulnerabilityScanResult,
 )
 
+from services.quarantine_service import get_quarantined_files
 
 router = APIRouter(prefix="/ai-copilot", tags=["AI Copilot"])
 
@@ -21,203 +22,330 @@ def get_recent_context():
     db = SessionLocal()
 
     try:
-        recent_events = (
+        events = (
             db.query(SecurityEvent)
             .order_by(SecurityEvent.id.desc())
-            .limit(5)
+            .limit(10)
             .all()
         )
 
-        recent_url_scans = (
+        url_scans = (
             db.query(ScanResult)
             .order_by(ScanResult.id.desc())
-            .limit(5)
+            .limit(10)
             .all()
         )
 
-        recent_vulnerability_scans = (
+        vulnerability_scans = (
             db.query(VulnerabilityScanResult)
             .order_by(VulnerabilityScanResult.id.desc())
-            .limit(5)
+            .limit(10)
             .all()
         )
 
+        quarantine_items = get_quarantined_files()
+
         return {
-            "events": recent_events,
-            "url_scans": recent_url_scans,
-            "vulnerability_scans": recent_vulnerability_scans,
+            "events": events,
+            "url_scans": url_scans,
+            "vulnerability_scans": vulnerability_scans,
+            "quarantine_items": quarantine_items,
         }
 
     finally:
         db.close()
 
 
-def summarize_events(events):
-    if not events:
-        return "No recent security events were found."
-
-    high_count = sum(1 for event in events if event.severity == "HIGH")
-    medium_count = sum(1 for event in events if event.severity == "MEDIUM")
-    low_count = sum(1 for event in events if event.severity == "LOW")
-
-    latest = events[0]
-
-    return (
-        f"There are {len(events)} recent security events. "
-        f"High: {high_count}, Medium: {medium_count}, Low: {low_count}. "
-        f"Latest event: {latest.event_type} - {latest.message}"
-    )
-
-
-def summarize_url_scans(scans):
-    if not scans:
-        return "No recent URL scans were found."
-
-    highest_risk_scan = max(
-        scans,
-        key=lambda scan: scan.risk_score or 0,
-    )
-
-    return (
-        f"There are {len(scans)} recent URL scans. "
-        f"The highest recent URL risk is {highest_risk_scan.risk_score}/100 "
-        f"for {highest_risk_scan.domain} with threat level "
-        f"{highest_risk_scan.threat_level}."
-    )
-
-
-def summarize_vulnerability_scans(scans):
-    if not scans:
-        return "No recent vulnerability scans were found."
-
-    weakest_scan = min(
-        scans,
-        key=lambda scan: scan.score or 0,
-    )
-
-    return (
-        f"There are {len(scans)} recent vulnerability scans. "
-        f"The weakest recent security score is {weakest_scan.score}/100 "
-        f"for {weakest_scan.hostname}. "
-        f"SSL valid: {weakest_scan.ssl_valid}."
-    )
-
-
-def explain_vulnerability_findings(scan):
-    if not scan or not scan.findings:
-        return "No vulnerability findings are available yet."
-
+def safe_json_loads(value, fallback):
     try:
-        findings = json.loads(scan.findings or "[]")
+        return json.loads(value or fallback)
     except Exception:
-        findings = []
+        return json.loads(fallback)
 
-    if not findings:
-        return "No vulnerability findings are available yet."
 
-    main_findings = findings[:3]
+def explain_latest_url_scan(scans):
+    if not scans:
+        return "No URL scan results are available yet."
 
-    explanation = "The latest vulnerability scan found: "
+    scan = scans[0]
+    reasons = safe_json_loads(scan.reasons, "[]")
 
-    explanation += "; ".join(
-        f"{finding.get('severity', 'UNKNOWN')} - {finding.get('title', 'Unknown issue')}"
-        for finding in main_findings
+    answer = (
+        f"Latest URL Scan Analysis:\n\n"
+        f"Target: {scan.url or scan.domain}\n"
+        f"Domain: {scan.domain}\n"
+        f"Threat Level: {scan.threat_level}\n"
+        f"Risk Score: {scan.risk_score}/100\n\n"
     )
 
-    explanation += (
-        ". Recommended action: review missing security headers, verify SSL, "
-        "and confirm the target uses modern browser protections."
+    if reasons:
+        answer += "Main risk indicators:\n"
+        for reason in reasons[:5]:
+            answer += f"- {reason}\n"
+    else:
+        answer += "No detailed risk indicators were stored for this scan.\n"
+
+    answer += (
+        "\nRecommended next actions:\n"
+        "- Review the domain and registrar information.\n"
+        "- Avoid entering credentials if login forms were detected.\n"
+        "- Re-scan suspicious domains before trusting them.\n"
     )
 
-    return explanation
+    return answer
+
+
+def explain_latest_file_activity(events, quarantine_items):
+    file_events = [
+        event for event in events
+        if "FILE" in event.event_type or "MALWARE" in event.event_type
+    ]
+
+    latest_quarantine = quarantine_items[0] if quarantine_items else None
+
+    if not file_events and not latest_quarantine:
+        return (
+            "No recent file scan or quarantine activity is available yet. "
+            "Run a file scan first, then I can explain the result."
+        )
+
+    answer = "Latest File Security Analysis:\n\n"
+
+    if latest_quarantine:
+        answer += (
+            f"Quarantined File: {latest_quarantine.get('original_filename')}\n"
+            f"Threat Level: {latest_quarantine.get('threat_level')}\n"
+            f"Risk Score: {latest_quarantine.get('risk_score')}/100\n"
+            f"Threat Name: {latest_quarantine.get('threat') or 'Unknown'}\n"
+            f"Status: {latest_quarantine.get('status')}\n\n"
+        )
+
+        answer += (
+            "Meaning:\n"
+            "This file was isolated because the scanner classified it as risky "
+            "or infected. Keeping it quarantined prevents accidental use while "
+            "you review it.\n\n"
+        )
+
+    if file_events:
+        latest_event = file_events[0]
+        answer += (
+            f"Latest File Event: {latest_event.event_type}\n"
+            f"Severity: {latest_event.severity}\n"
+            f"Message: {latest_event.message}\n\n"
+        )
+
+    answer += (
+        "Recommended next actions:\n"
+        "- Do not open quarantined files.\n"
+        "- Review hash reputation and antivirus result.\n"
+        "- Delete confirmed malware.\n"
+        "- Restore only if you are sure it is a false positive.\n"
+    )
+
+    return answer
+
+
+def explain_latest_vulnerability_scan(scans):
+    if not scans:
+        return "No vulnerability scan results are available yet."
+
+    scan = scans[0]
+    findings = safe_json_loads(scan.findings, "[]")
+    headers = safe_json_loads(scan.security_headers, "{}")
+
+    answer = (
+        f"Latest Vulnerability Scan Analysis:\n\n"
+        f"Target: {scan.target}\n"
+        f"Hostname: {scan.hostname}\n"
+        f"Security Score: {scan.score}/100\n"
+        f"SSL Valid: {scan.ssl_valid}\n"
+        f"SSL Days Left: {scan.ssl_days_left}\n\n"
+    )
+
+    if findings:
+        answer += "Main findings:\n"
+        for finding in findings[:6]:
+            answer += (
+                f"- {finding.get('severity', 'UNKNOWN')}: "
+                f"{finding.get('title', 'Unknown issue')} — "
+                f"{finding.get('description', 'No description')}\n"
+            )
+    else:
+        answer += "No vulnerability findings were stored for this scan.\n"
+
+    missing_headers = [
+        header for header, value in headers.items()
+        if not value
+    ]
+
+    if missing_headers:
+        answer += "\nMissing or unavailable security headers:\n"
+        for header in missing_headers[:6]:
+            answer += f"- {header}\n"
+
+    answer += (
+        "\nRecommended next actions:\n"
+        "- Add missing browser security headers.\n"
+        "- Confirm HTTPS redirects correctly.\n"
+        "- Review exposed server headers.\n"
+        "- Re-test after applying fixes.\n"
+    )
+
+    return answer
+
+
+def generate_investigation_notes(context):
+    events = context["events"]
+    url_scans = context["url_scans"]
+    vulnerability_scans = context["vulnerability_scans"]
+    quarantine_items = context["quarantine_items"]
+
+    high_events = [
+        event for event in events
+        if event.severity == "HIGH"
+    ]
+
+    answer = "Investigation Notes:\n\n"
+
+    answer += "Scope:\n"
+    answer += (
+        f"- Reviewed {len(events)} recent security events.\n"
+        f"- Reviewed {len(url_scans)} recent URL scans.\n"
+        f"- Reviewed {len(vulnerability_scans)} recent vulnerability scans.\n"
+        f"- Reviewed {len(quarantine_items)} quarantine records.\n\n"
+    )
+
+    answer += "Key Findings:\n"
+
+    if high_events:
+        for event in high_events[:5]:
+            answer += f"- HIGH event: {event.event_type} — {event.message}\n"
+    else:
+        answer += "- No high-severity events found in the recent event window.\n"
+
+    if quarantine_items:
+        item = quarantine_items[0]
+        answer += (
+            f"- Latest quarantined file: {item.get('original_filename')} "
+            f"with risk {item.get('risk_score')}/100.\n"
+        )
+
+    if url_scans:
+        riskiest = max(url_scans, key=lambda scan: scan.risk_score or 0)
+        answer += (
+            f"- Riskiest recent URL: {riskiest.domain} "
+            f"with score {riskiest.risk_score}/100.\n"
+        )
+
+    if vulnerability_scans:
+        weakest = min(vulnerability_scans, key=lambda scan: scan.score or 0)
+        answer += (
+            f"- Weakest vulnerability score: {weakest.hostname} "
+            f"with score {weakest.score}/100.\n"
+        )
+
+    answer += (
+        "\nRecommended Actions:\n"
+        "- Prioritize HIGH severity items first.\n"
+        "- Keep quarantined files isolated until reviewed.\n"
+        "- Re-scan risky domains after changes.\n"
+        "- Patch missing security headers and SSL weaknesses.\n"
+    )
+
+    return answer
+
+
+def dashboard_summary(context):
+    events = context["events"]
+    url_scans = context["url_scans"]
+    vulnerability_scans = context["vulnerability_scans"]
+    quarantine_items = context["quarantine_items"]
+
+    high_events = sum(1 for event in events if event.severity == "HIGH")
+    medium_events = sum(1 for event in events if event.severity == "MEDIUM")
+    low_events = sum(1 for event in events if event.severity == "LOW")
+
+    return (
+        "Dashboard Security Summary:\n\n"
+        f"- Recent events: {len(events)}\n"
+        f"- High: {high_events}, Medium: {medium_events}, Low: {low_events}\n"
+        f"- Recent URL scans: {len(url_scans)}\n"
+        f"- Recent vulnerability scans: {len(vulnerability_scans)}\n"
+        f"- Quarantined files: {len(quarantine_items)}\n\n"
+        "Overall recommendation: review high-severity events first, "
+        "keep suspicious files quarantined, and re-check weak vulnerability scores."
+    )
 
 
 @router.post("/ask")
 def ask_copilot(payload: CopilotRequest):
     question = payload.question.lower()
-    if "dashboard summary" in question:
-        answer = (
-            "Dashboard Summary: Security telemetry is active. "
-            "Recent events have been recorded in the database. "
-            "Threat monitoring, vulnerability scanning, browser protection, "
-            "quarantine management, and AI analysis services are operational."
-        )
-
-        return {
-            "question": payload.question,
-            "answer": answer,
-            "engine": "EHD AI Copilot V2 - database-aware analyst",
-        }
-
     context = get_recent_context()
 
-    events = context["events"]
-    url_scans = context["url_scans"]
-    vulnerability_scans = context["vulnerability_scans"]
+    if "url" in question or "domain" in question:
+        answer = explain_latest_url_scan(context["url_scans"])
 
-    latest_vulnerability_scan = (
-        vulnerability_scans[0] if vulnerability_scans else None
-    )
-
-    if "event" in question or "alert" in question or "threat" in question:
-        answer = summarize_events(events)
-
-    elif "url" in question or "domain" in question or "scan" in question:
-        answer = summarize_url_scans(url_scans)
+    elif "file" in question or "malware" in question or "quarantine" in question:
+        answer = explain_latest_file_activity(
+            context["events"],
+            context["quarantine_items"],
+        )
 
     elif (
         "vulnerability" in question
-        or "header" in question
         or "ssl" in question
+        or "header" in question
         or "security score" in question
     ):
-        answer = (
-            summarize_vulnerability_scans(vulnerability_scans)
-            + " "
-            + explain_vulnerability_findings(latest_vulnerability_scan)
+        answer = explain_latest_vulnerability_scan(
+            context["vulnerability_scans"]
         )
 
-    elif "dashboard" in question or "status" in question or "summary" in question:
-        answer = (
-            summarize_events(events)
-            + " "
-            + summarize_url_scans(url_scans)
-            + " "
-            + summarize_vulnerability_scans(vulnerability_scans)
-        )
+    elif (
+        "investigation" in question
+        or "notes" in question
+        or "report" in question
+        or "analyst" in question
+    ):
+        answer = generate_investigation_notes(context)
 
     elif "phishing" in question:
         answer = (
-            "Phishing is a cyberattack where an attacker tricks users into "
-            "entering passwords, payment details, or private information on a "
-            "fake or suspicious website. In this dashboard, phishing risk is "
-            "usually connected to suspicious domain words, redirects, login "
-            "forms, invalid SSL, and high-risk scan results."
+            "Phishing is an attack where a fake or suspicious website tricks "
+            "users into entering credentials, payment details, or private data. "
+            "In EHD, phishing risk can be connected to suspicious domains, "
+            "redirects, login forms, weak SSL, and high URL risk scores."
         )
 
     elif "sql injection" in question:
         answer = (
             "SQL injection happens when attackers insert malicious database "
-            "commands into input fields. Your current scanner does not deeply "
-            "test SQL injection yet, but the vulnerability scanner can still "
-            "identify basic web security weaknesses such as missing headers "
-            "and SSL problems."
+            "commands into input fields. EHD does not deeply exploit-test SQL "
+            "injection yet, but it can identify general web security weaknesses "
+            "such as missing headers, SSL problems, and risky site behavior."
         )
+
+    elif "summary" in question or "dashboard" in question or "status" in question:
+        answer = dashboard_summary(context)
 
     else:
         answer = (
-            "I can analyze recent threat events, URL scan history, "
-            "vulnerability scan results, SSL status, missing security headers, "
-            "phishing risk, and dashboard security status."
+            "I can help explain recent URL scans, file scans, quarantine records, "
+            "vulnerability scans, SSL issues, security headers, recent events, "
+            "and generate investigation notes. Try asking: "
+            "'Explain latest URL scan', 'Explain latest file scan', "
+            "'Explain latest vulnerability scan', or 'Generate investigation notes'."
         )
 
     return {
         "question": payload.question,
         "answer": answer,
-        "engine": "EHD AI Copilot V2 - database-aware analyst",
+        "engine": "EHD AI Copilot V3 - analyst mode",
         "context": {
-            "recent_events": len(events),
-            "recent_url_scans": len(url_scans),
-            "recent_vulnerability_scans": len(vulnerability_scans),
+            "recent_events": len(context["events"]),
+            "recent_url_scans": len(context["url_scans"]),
+            "recent_vulnerability_scans": len(context["vulnerability_scans"]),
+            "quarantine_items": len(context["quarantine_items"]),
         },
     }
