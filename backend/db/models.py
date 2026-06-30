@@ -111,3 +111,24 @@ class User(Base):
     hashed_password = Column(String)
 
     is_active = Column(Boolean, default=True)
+    
+    
+class IOCRecord(Base):
+    """
+    Stores local RavShield indicators of compromise.
+    """
+
+    __tablename__ = "ioc_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    ioc_type = Column(String, index=True)
+    value = Column(String, index=True)
+
+    severity = Column(String)
+    source = Column(String)
+    description = Column(String)
+    tags = Column(String)
+
+    created_at = Column(String)
+    updated_at = Column(String)
