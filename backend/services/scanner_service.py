@@ -15,6 +15,8 @@ from services.ai_report_service import generate_ai_summary
 import ssl
 from datetime import datetime, timezone
 
+from ravshield_threatintel.threat_correlation import correlate_url_threats
+
 
 def resolve_ip_address(domain: str):
     try:
@@ -197,6 +199,11 @@ def scan_website(input_url: str):
     ssl_intelligence = get_ssl_intelligence(domain)
     redirect_info = get_redirect_chain(input_url)
     suspicious_domain_indicators = detect_suspicious_domain_indicators(domain)
+    
+    threat_correlation = correlate_url_threats(
+    domain=domain,
+    resolved_ip=resolved_ip,
+)
 
     # Invalid URL protection
     if not domain:
@@ -320,6 +327,10 @@ def scan_website(input_url: str):
         risk_score += 20
         reasons.append("Final destination does not use HTTPS")
 
+    if threat_correlation.get("risk_adjustment", 0) > 0:
+        risk_score += threat_correlation["risk_adjustment"]
+        reasons.extend(threat_correlation["reasons"])
+
     risk_score = min(risk_score, 100)
 
     if risk_score >= 70:
@@ -353,6 +364,7 @@ def scan_website(input_url: str):
         "https_enabled": redirect_info.get("https_enabled"),
         "http_status_code": redirect_info.get("status_code"),
         "suspicious_domain_indicators": suspicious_domain_indicators,
+        "threat_correlation": threat_correlation,
         "registrar": registrar,
         "creation_date": creation_date,
         "expiration_date": expiration_date,
