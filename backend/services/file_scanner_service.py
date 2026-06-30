@@ -7,6 +7,7 @@ import os
 import subprocess
 import tempfile
 from services.hash_reputation_service import check_hash_reputation
+from ravshield_threatintel.ioc_database import check_ioc_record
 
 
 DANGEROUS_EXTENSIONS = [
@@ -345,6 +346,11 @@ def analyze_file(filename: str, file_bytes: bytes):
     file_size = len(file_bytes)
     sha256_hash = hashlib.sha256(file_bytes).hexdigest()
     hash_reputation = check_hash_reputation(sha256_hash)
+    
+    hash_ioc = check_ioc_record(
+        "SHA256",
+        sha256_hash,
+    )
 
     detected_file_type = detect_file_signature(file_bytes)
     entropy = calculate_entropy(file_bytes)
@@ -357,6 +363,16 @@ def analyze_file(filename: str, file_bytes: bytes):
         reasons.insert(
             0,
             f"Known malicious file hash detected: {hash_reputation['threat']}"
+        )
+        
+    if hash_ioc.get("matched"):
+        record = hash_ioc["record"]
+
+        risk_score = 100
+
+        reasons.insert(
+            0,
+            f"IOC database match: {record['description']}"
         )
 
     for extension in DANGEROUS_EXTENSIONS:
@@ -447,6 +463,7 @@ def analyze_file(filename: str, file_bytes: bytes):
         "file_size": file_size,
         "sha256": sha256_hash,
         "hash_reputation": hash_reputation,
+        "hash_ioc": hash_ioc,
         "risk_score": risk_score,
         "threat_level": threat_level,
         "reasons": reasons,
