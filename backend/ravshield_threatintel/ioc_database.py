@@ -177,3 +177,20 @@ def serialize_ioc(record: IOCRecord):
         "created_at": record.created_at,
         "updated_at": record.updated_at,
     }
+    
+def auto_learn_ioc(
+    ioc_type: str,
+    value: str,
+    severity: str,
+    description: str,
+):
+    return create_ioc_record(
+        {
+            "ioc_type": ioc_type,
+            "value": value,
+            "severity": severity,
+            "source": "Auto-learned from EHD scan",
+            "description": description,
+            "tags": ["auto-learned"],
+        }
+    )

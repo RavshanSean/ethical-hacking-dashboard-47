@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 from services.hash_reputation_service import check_hash_reputation
 from ravshield_threatintel.ioc_database import check_ioc_record
+from ravshield_threatintel.ioc_database import auto_learn_ioc
 
 
 DANGEROUS_EXTENSIONS = [
@@ -476,5 +477,13 @@ def analyze_file(filename: str, file_bytes: bytes):
     }
 
     scan_result["ai_summary"] = generate_file_ai_summary(scan_result)
+    
+    if threat_level == "HIGH":
+        auto_learn_ioc(
+            "SHA256",
+            sha256_hash,
+            "HIGH",
+            "Automatically learned from a HIGH risk file scan.",
+        )
 
     return scan_result

@@ -16,6 +16,7 @@ import ssl
 from datetime import datetime, timezone
 
 from ravshield_threatintel.threat_correlation import correlate_url_threats
+from ravshield_threatintel.ioc_database import auto_learn_ioc
 
 
 def resolve_ip_address(domain: str):
@@ -406,6 +407,26 @@ def scan_website(input_url: str):
             latitude=ip_intelligence.get("latitude"),
             longitude=ip_intelligence.get("longitude"),
         )
+        
+    if threat_level == "HIGH":
+
+        auto_learn_ioc(
+            "DOMAIN",
+            domain,
+            "HIGH",
+            "Automatically learned from a HIGH risk URL scan.",
+        )
+
+        if (
+            resolved_ip
+            and resolved_ip != "Unable to resolve"
+        ):
+            auto_learn_ioc(
+                "IP",
+                resolved_ip,
+                "HIGH",
+                "Automatically learned from a HIGH risk URL scan.",
+            )
     
     save_scan_result(scan_result)
 
