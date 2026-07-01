@@ -31,6 +31,15 @@ SUSPICIOUS_TLDS = [
     "cf",
 ]
 
+LOCAL_DOMAIN_BLACKLIST = {
+    "paypal-login-secure.xyz": {
+        "category": "Phishing",
+        "severity": "HIGH",
+        "source": "Local RavShield blacklist",
+        "description": "Known phishing-style test domain manually added for local detection.",
+    },
+}
+
 
 def normalize_domain(domain: str):
     domain = domain.lower().strip()
@@ -108,6 +117,22 @@ def get_whois_intelligence(domain: str):
         }
 
 
+def check_local_domain_blacklist(domain: str):
+    record = LOCAL_DOMAIN_BLACKLIST.get(domain)
+
+    if not record:
+        return {
+            "matched": False,
+            "status": "No local blacklist match",
+        }
+
+    return {
+        "matched": True,
+        "status": "Matched local blacklist",
+        "record": record,
+    }
+
+
 def analyze_domain_reputation(domain: str):
     normalized_domain = normalize_domain(domain)
     reasons = []
@@ -139,7 +164,7 @@ def analyze_domain_reputation(domain: str):
     except Exception:
         reasons.append("Domain does not currently resolve to an IP address.")
         risk_score += 25
-        
+
     whois_intelligence = get_whois_intelligence(normalized_domain)
 
     if whois_intelligence.get("available"):
@@ -163,7 +188,15 @@ def analyze_domain_reputation(domain: str):
             reasons.append(
                 f"Domain expires soon: {expires_in_days} days remaining."
             )
-        
+
+    blacklist_result = check_local_domain_blacklist(normalized_domain)
+
+    if blacklist_result.get("matched"):
+        record = blacklist_result["record"]
+        risk_score += 50
+        reasons.append(
+            f"Local blacklist match: {record['category']}."
+        )
 
     for keyword in SUSPICIOUS_KEYWORDS:
         if keyword in normalized_domain:
@@ -213,7 +246,8 @@ def analyze_domain_reputation(domain: str):
         "tld": tld,
         "subdomain_count": subdomain_count,
         "known_malicious": None,
-        "blacklist_status": "Not available yet",
+        "blacklist": blacklist_result,
+        "blacklist_status": blacklist_result.get("status"),
         "whois": whois_intelligence,
         "whois_status": whois_intelligence.get("status"),
         "confidence": None,
