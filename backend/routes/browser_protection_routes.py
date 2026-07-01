@@ -1,6 +1,10 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from routes.vulnerability_routes import vulnerability_scan, VulnerabilityScanRequest
+
+from routes.vulnerability_routes import (
+    vulnerability_scan,
+    VulnerabilityScanRequest,
+)
 from services.scanner_service import scan_website
 
 router = APIRouter(prefix="/browser-protection", tags=["Browser Protection"])
@@ -23,16 +27,6 @@ def check_browser_protection(payload: BrowserProtectionRequest):
 
     findings = vulnerability_result.get("findings", [])
 
-    high_count = len([
-        finding for finding in findings
-        if finding.get("severity") == "HIGH"
-    ])
-
-    medium_count = len([
-        finding for finding in findings
-        if finding.get("severity") == "MEDIUM"
-    ])
-
     suspicious_indicators = url_result.get(
         "suspicious_domain_indicators",
         []
@@ -41,12 +35,35 @@ def check_browser_protection(payload: BrowserProtectionRequest):
     redirect_count = url_result.get("redirect_count", 0)
     ssl_info = url_result.get("ssl_intelligence", {})
     ip_intelligence = url_result.get("ip_intelligence", {})
+    threat_correlation = url_result.get("threat_correlation", {})
+
+    matched_iocs = threat_correlation.get("matched_iocs", [])
+    correlation_reasons = threat_correlation.get("reasons", [])
+    correlation_level = threat_correlation.get("correlation_level", "NONE")
+    correlation_risk = threat_correlation.get("risk_adjustment", 0)
 
     if suspicious_indicators:
         findings.append({
             "severity": "HIGH",
             "title": "Suspicious Domain Indicators",
             "description": ", ".join(suspicious_indicators),
+        })
+
+    if matched_iocs:
+        findings.append({
+            "severity": "HIGH",
+            "title": "ThreatIntel IOC Match",
+            "description": (
+                "RavShield ThreatIntel matched this target against "
+                "the local IOC database."
+            ),
+        })
+
+    if correlation_level in ["HIGH", "MEDIUM"]:
+        findings.append({
+            "severity": correlation_level,
+            "title": "Threat Correlation Match",
+            "description": ", ".join(correlation_reasons),
         })
 
     if redirect_count >= 3:
@@ -72,10 +89,24 @@ def check_browser_protection(payload: BrowserProtectionRequest):
     combined_risk = max(
         url_risk_score,
         100 - vulnerability_score,
+        correlation_risk,
     )
 
     if suspicious_indicators:
         combined_risk = max(combined_risk, 85)
+
+    if matched_iocs:
+        combined_risk = 100
+
+    high_count = len([
+        finding for finding in findings
+        if finding.get("severity") == "HIGH"
+    ])
+
+    medium_count = len([
+        finding for finding in findings
+        if finding.get("severity") == "MEDIUM"
+    ])
 
     if high_count > 0 or combined_risk >= 75:
         status = "BLOCKED"
@@ -87,23 +118,18 @@ def check_browser_protection(payload: BrowserProtectionRequest):
         status = "SAFE"
         recommendation = "No major browser protection issues detected."
 
-    high_count = len([
-        finding for finding in findings
-        if finding.get("severity") == "HIGH"
-    ])
-
-    medium_count = len([
-        finding for finding in findings
-        if finding.get("severity") == "MEDIUM"
-    ])
-    
     explanation = (
-        f"Browser Protection reviewed URL reputation, vulnerability findings, "
-        f"SSL status, redirects, hosting intelligence, and suspicious domain indicators. "
+        "Browser Protection reviewed URL reputation, vulnerability findings, "
+        "SSL status, redirects, hosting intelligence, suspicious domain indicators, "
+        "and RavShield ThreatIntel correlation. "
         f"Final verdict: {status}. "
     )
 
-    if status == "BLOCKED":
+    if matched_iocs:
+        explanation += (
+            "This site matched the local IOC database, so it was treated as high risk."
+        )
+    elif status == "BLOCKED":
         explanation += (
             "This site should be avoided because it has high-risk signals or severe findings."
         )
@@ -124,6 +150,12 @@ def check_browser_protection(payload: BrowserProtectionRequest):
         "status": status,
         "recommendation": recommendation,
         "explanation": explanation,
+        "threat_intel": {
+            "correlation_level": correlation_level,
+            "risk_adjustment": correlation_risk,
+            "matched_iocs": matched_iocs,
+            "reasons": correlation_reasons,
+        },
         "ssl": {
             "valid": ssl_info.get("valid"),
             "issuer": ssl_info.get("issuer"),
