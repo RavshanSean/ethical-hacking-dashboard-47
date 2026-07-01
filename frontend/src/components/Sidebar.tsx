@@ -19,6 +19,7 @@ import {
   Lock,
   Box,
   FileText,
+  Database,
 } from "lucide-react";
 
 const navGroups = [
@@ -51,10 +52,11 @@ const navGroups = [
       
     ],
   },
-  {
+    {
     title: "Tools",
     items: [
       { label: "IP & Threat Map", href: "/threat-map", icon: Globe },
+      { label: "ThreatIntel", href: "/threat-intel", icon: Database },
       { label: "Settings", href: "/settings", icon: Settings },
       { label: "AI Copilot", href: "/ai-copilot", icon: Bot },
     ],
