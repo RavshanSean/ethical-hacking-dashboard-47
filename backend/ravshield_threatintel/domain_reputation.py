@@ -1,5 +1,7 @@
 import re
 import socket
+import whois
+from datetime import datetime, timezone
 
 
 SUSPICIOUS_KEYWORDS = [
@@ -48,6 +50,64 @@ def is_valid_domain(domain: str):
     return re.match(pattern, domain) is not None
 
 
+def get_whois_intelligence(domain: str):
+    try:
+        info = whois.whois(domain)
+
+        creation_date = info.creation_date
+        expiration_date = info.expiration_date
+        registrar = info.registrar
+        name_servers = info.name_servers
+
+        if isinstance(creation_date, list):
+            creation_date = creation_date[0]
+
+        if isinstance(expiration_date, list):
+            expiration_date = expiration_date[0]
+
+        domain_age_days = None
+        expires_in_days = None
+
+        if creation_date:
+            if creation_date.tzinfo is None:
+                creation_date = creation_date.replace(tzinfo=timezone.utc)
+
+            domain_age_days = (
+                datetime.now(timezone.utc) - creation_date
+            ).days
+
+        if expiration_date:
+            if expiration_date.tzinfo is None:
+                expiration_date = expiration_date.replace(tzinfo=timezone.utc)
+
+            expires_in_days = (
+                expiration_date - datetime.now(timezone.utc)
+            ).days
+
+        return {
+            "available": True,
+            "registrar": str(registrar) if registrar else "Unknown",
+            "creation_date": creation_date.isoformat() if creation_date else None,
+            "expiration_date": expiration_date.isoformat() if expiration_date else None,
+            "domain_age_days": domain_age_days,
+            "expires_in_days": expires_in_days,
+            "name_servers": name_servers if name_servers else [],
+            "status": "WHOIS lookup successful",
+        }
+
+    except Exception as error:
+        return {
+            "available": False,
+            "registrar": "Unknown",
+            "creation_date": None,
+            "expiration_date": None,
+            "domain_age_days": None,
+            "expires_in_days": None,
+            "name_servers": [],
+            "status": f"WHOIS lookup unavailable: {error}",
+        }
+
+
 def analyze_domain_reputation(domain: str):
     normalized_domain = normalize_domain(domain)
     reasons = []
@@ -79,6 +139,31 @@ def analyze_domain_reputation(domain: str):
     except Exception:
         reasons.append("Domain does not currently resolve to an IP address.")
         risk_score += 25
+        
+    whois_intelligence = get_whois_intelligence(normalized_domain)
+
+    if whois_intelligence.get("available"):
+        domain_age_days = whois_intelligence.get("domain_age_days")
+        expires_in_days = whois_intelligence.get("expires_in_days")
+
+        if domain_age_days is not None and domain_age_days < 30:
+            risk_score += 25
+            reasons.append(
+                f"Domain is very new: {domain_age_days} days old."
+            )
+
+        elif domain_age_days is not None and domain_age_days < 90:
+            risk_score += 15
+            reasons.append(
+                f"Domain is relatively new: {domain_age_days} days old."
+            )
+
+        if expires_in_days is not None and expires_in_days < 30:
+            risk_score += 10
+            reasons.append(
+                f"Domain expires soon: {expires_in_days} days remaining."
+            )
+        
 
     for keyword in SUSPICIOUS_KEYWORDS:
         if keyword in normalized_domain:
@@ -129,7 +214,8 @@ def analyze_domain_reputation(domain: str):
         "subdomain_count": subdomain_count,
         "known_malicious": None,
         "blacklist_status": "Not available yet",
-        "whois_status": "Not available yet",
+        "whois": whois_intelligence,
+        "whois_status": whois_intelligence.get("status"),
         "confidence": None,
         "threat_intel_status": "Local RavShield domain reputation V1 only. External threat intelligence not connected yet.",
         "reasons": reasons,
