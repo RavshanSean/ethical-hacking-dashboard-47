@@ -10,6 +10,7 @@ from db.models import (
 )
 
 from services.quarantine_service import get_quarantined_files
+from ravshield_threatintel.ioc_database import list_ioc_records
 
 router = APIRouter(prefix="/ai-copilot", tags=["AI Copilot"])
 
@@ -256,6 +257,45 @@ def generate_investigation_notes(context):
     return answer
 
 
+def threat_intelligence_summary():
+    iocs = list_ioc_records(limit=20)
+
+    if not iocs:
+        return (
+            "Threat Intelligence Summary:\n\n"
+            "No IOC records are currently stored."
+        )
+
+    high = [
+        item
+        for item in iocs
+        if item["severity"] == "HIGH"
+    ]
+
+    answer = (
+        "Threat Intelligence Summary:\n\n"
+        f"IOC Records: {len(iocs)}\n"
+        f"High Severity: {len(high)}\n\n"
+    )
+
+    answer += "Recent Indicators:\n"
+
+    for item in iocs[:5]:
+        answer += (
+            f"- {item['ioc_type']}: "
+            f"{item['value']} "
+            f"({item['severity']})\n"
+        )
+
+    answer += (
+        "\nRecommendation:\n"
+        "Review HIGH severity indicators, monitor related infrastructure, "
+        "and continue expanding the IOC database."
+    )
+
+    return answer
+
+
 def dashboard_summary(context):
     events = context["events"]
     url_scans = context["url_scans"]
@@ -309,6 +349,13 @@ def ask_copilot(payload: CopilotRequest):
         or "analyst" in question
     ):
         answer = generate_investigation_notes(context)
+        
+    elif (
+        "threat intel" in question
+        or "ioc" in question
+        or "indicator" in question
+    ):
+        answer = threat_intelligence_summary()
 
     elif "phishing" in question:
         answer = (
