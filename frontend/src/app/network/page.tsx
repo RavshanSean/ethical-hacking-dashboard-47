@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import { API_BASE_URL } from "@/config/api";
-import { Activity, Download, Network, Upload } from "lucide-react";
+import {
+  Activity,
+  Download,
+  Network,
+  Upload,
+  Radar,
+  ShieldAlert,
+} from "lucide-react";
 
 type Connection = {
   local_address: string;
@@ -19,6 +26,24 @@ type NetworkData = {
   packets_received: number;
   connections_count: number;
   connections: Connection[];
+};
+
+type DiscoveredHost = {
+  ip: string;
+  open_ports: number[];
+  risk_score: number;
+  risk_level: string;
+  reasons: string[];
+};
+
+type DiscoveryData = {
+  status: string;
+  local_ip: string | null;
+  private_range: string | null;
+  scanned_hosts_limit: number;
+  detected_count: number;
+  detected_hosts: DiscoveredHost[];
+  note: string;
 };
 
 function formatBytes(bytes: number) {
@@ -39,6 +64,8 @@ function formatBytes(bytes: number) {
 
 export default function NetworkPage() {
   const [data, setData] = useState<NetworkData | null>(null);
+  const [discovery, setDiscovery] = useState<DiscoveryData | null>(null);
+  const [discoveryLoading, setDiscoveryLoading] = useState(false);
 
   async function loadNetwork() {
     try {
@@ -47,6 +74,20 @@ export default function NetworkPage() {
       setData(result);
     } catch (error) {
       console.error("Failed to load network data:", error);
+    }
+  }
+
+  async function runDiscovery() {
+    setDiscoveryLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/network/discovery`);
+      const result = await response.json();
+      setDiscovery(result);
+    } catch (error) {
+      console.error("Failed to run network discovery:", error);
+    } finally {
+      setDiscoveryLoading(false);
     }
   }
 
@@ -76,8 +117,8 @@ export default function NetworkPage() {
             </h1>
 
             <p className="mt-2 max-w-3xl text-sm text-slate-400">
-              Inspect live network traffic counters, packet flow, and active
-              endpoint connections.
+              Inspect live network traffic, active endpoint connections, and
+              private network discovery results from the backend machine.
             </p>
 
             <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-4">
@@ -104,6 +145,121 @@ export default function NetworkPage() {
                 value={data ? String(data.connections_count) : "--"}
                 icon={<Network />}
               />
+            </div>
+
+            <div className="mt-8 rounded-2xl border border-cyan-400/10 bg-[#07111f]/90 p-6">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">
+                    Private Network Intelligence
+                  </p>
+
+                  <h2 className="mt-2 text-2xl font-semibold text-white">
+                    Local Network Discovery
+                  </h2>
+
+                  <p className="mt-2 text-sm text-slate-400">
+                    Scans a small safe slice of the backend machine&apos;s local
+                    network for reachable private IP hosts.
+                  </p>
+                </div>
+
+                <button
+                  onClick={runDiscovery}
+                  disabled={discoveryLoading}
+                  className="rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-5 py-3 text-sm font-semibold text-cyan-300 transition hover:bg-cyan-400/20 disabled:opacity-50"
+                >
+                  {discoveryLoading ? "Scanning..." : "Run Discovery"}
+                </button>
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-4">
+                <StatCard
+                  title="Local IP"
+                  value={discovery?.local_ip || "--"}
+                  icon={<Radar />}
+                />
+
+                <StatCard
+                  title="Private Range"
+                  value={discovery?.private_range || "--"}
+                  icon={<Network />}
+                />
+
+                <StatCard
+                  title="Hosts Found"
+                  value={
+                    discovery ? String(discovery.detected_count || 0) : "--"
+                  }
+                  icon={<Activity />}
+                />
+
+                <StatCard
+                  title="Scan Limit"
+                  value={
+                    discovery
+                      ? String(discovery.scanned_hosts_limit || 0)
+                      : "--"
+                  }
+                  icon={<ShieldAlert />}
+                />
+              </div>
+
+              {discovery?.note && (
+                <p className="mt-5 rounded-xl border border-yellow-400/10 bg-yellow-400/5 p-4 text-sm text-yellow-200">
+                  {discovery.note}
+                </p>
+              )}
+
+              <div className="mt-6 space-y-4">
+                {discovery?.detected_hosts?.map((host) => (
+                  <div
+                    key={host.ip}
+                    className="rounded-xl border border-white/5 bg-black/35 p-4"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-lg font-semibold text-white">
+                          {host.ip}
+                        </p>
+
+                        <p className="mt-1 text-sm text-slate-400">
+                          Open ports:{" "}
+                          {host.open_ports.length > 0
+                            ? host.open_ports.join(", ")
+                            : "None detected"}
+                        </p>
+                      </div>
+
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-bold ${
+                          host.risk_level === "HIGH"
+                            ? "bg-red-500/10 text-red-300"
+                            : host.risk_level === "MEDIUM"
+                            ? "bg-yellow-500/10 text-yellow-300"
+                            : host.risk_level === "LOW"
+                            ? "bg-cyan-500/10 text-cyan-300"
+                            : "bg-green-500/10 text-green-300"
+                        }`}
+                      >
+                        {host.risk_level} · {host.risk_score}/100
+                      </span>
+                    </div>
+
+                    <ul className="mt-3 space-y-1 text-sm text-slate-400">
+                      {host.reasons.map((reason, index) => (
+                        <li key={index}>• {reason}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+
+                {discovery && discovery.detected_hosts.length === 0 && (
+                  <p className="rounded-xl border border-white/5 bg-black/35 p-4 text-sm text-slate-400">
+                    No reachable hosts found in the safe scan window.
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="mt-8 rounded-2xl border border-cyan-400/10 bg-[#07111f]/90 p-6">
