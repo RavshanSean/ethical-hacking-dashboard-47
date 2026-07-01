@@ -48,8 +48,22 @@ def correlate_url_threats(domain: str, resolved_ip: str):
 
     risk_adjustment = min(risk_adjustment, 100)
 
-    if risk_adjustment >= 70:
+    has_high_ioc = any(
+    ioc.get("severity") == "HIGH"
+    for ioc in matched_iocs
+)
+
+    has_medium_ioc = any(
+        ioc.get("severity") == "MEDIUM"
+        for ioc in matched_iocs
+    )
+
+    if has_high_ioc:
         correlation_level = "HIGH"
+    elif risk_adjustment >= 70:
+        correlation_level = "HIGH"
+    elif has_medium_ioc:
+        correlation_level = "MEDIUM"
     elif risk_adjustment >= 30:
         correlation_level = "MEDIUM"
     elif risk_adjustment > 0:
