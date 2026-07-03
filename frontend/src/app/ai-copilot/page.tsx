@@ -22,6 +22,52 @@ export default function AICopilotPage() {
   const [speaking, setSpeaking] = useState(false);
   const [lastAnswer, setLastAnswer] = useState("");
 
+  async function quickAsk(prompt: string) {
+  setQuestion(prompt);
+
+  const userQuestion = prompt;
+
+  setMessages((previous) => [
+    ...previous,
+    { role: "user", text: userQuestion },
+  ]);
+
+  setLoading(true);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai-copilot/ask`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ question: userQuestion }),
+    });
+
+    const data = await response.json();
+
+    const aiAnswer =
+      data.answer || "I could not generate an answer.";
+
+    setLastAnswer(aiAnswer);
+
+    setMessages((previous) => [
+      ...previous,
+      { role: "ai", text: aiAnswer },
+    ]);
+  } catch {
+    setMessages((previous) => [
+      ...previous,
+      {
+        role: "ai",
+        text: "AI Copilot is unavailable right now.",
+      },
+    ]);
+  } finally {
+    setQuestion("");
+    setLoading(false);
+  }
+}
+
   async function askCopilot() {
     if (!question.trim()) return;
 
@@ -195,6 +241,26 @@ export default function AICopilotPage() {
                     </div>
                   )}
                 </div>
+
+                  <div className="mb-5 flex flex-wrap gap-2">
+                      {[
+                        "Give me dashboard summary",
+                        "Give me threat intel summary",
+                        "Explain latest URL scan",
+                        "Explain latest file scan",
+                        "Explain latest vulnerability scan",
+                      ].map((prompt) => (
+                        <button
+                          key={prompt}
+                          onClick={() => quickAsk(prompt)}
+                          disabled={loading}
+                          className="rounded-lg border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-300 transition hover:bg-cyan-500/20"
+                        >
+                          {prompt}
+                        </button>
+                      ))}
+                    </div>
+
 
                 <div className="mt-6 flex gap-3">
                   <input

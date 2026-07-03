@@ -154,6 +154,87 @@ export default function ReportsPage() {
               </p>
             </div>
 
+
+          <div className="mt-8 rounded-2xl border border-cyan-400/10 bg-[#07111f]/90 p-6">
+  <h2 className="text-xl font-semibold text-cyan-300">
+    RavShield Threat Intelligence
+  </h2>
+
+  <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-4">
+    <StatCard
+      title="IOC Records"
+      value={report?.threat_intel?.ioc_total || 0}
+      color="text-cyan-300"
+    />
+
+    <StatCard
+      title="High Severity"
+      value={report?.threat_intel?.high_iocs || 0}
+      color="text-red-300"
+    />
+
+    <StatCard
+      title="Medium Severity"
+      value={report?.threat_intel?.medium_iocs || 0}
+      color="text-yellow-300"
+    />
+
+    <StatCard
+      title="IOC Types"
+      value={Number((report?.threat_intel?.ioc_types || []).length)}
+      color="text-emerald-300"
+    />
+  </div>
+
+  <div className="mt-8">
+    <h3 className="text-lg font-semibold text-white">
+      Recent Indicators
+    </h3>
+
+    <div className="mt-4 space-y-3">
+      {(report?.threat_intel?.recent_iocs || []).map((ioc: any) => (
+        <div
+          key={ioc.id}
+          className="rounded-xl border border-white/5 bg-black/35 p-4"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-white">
+                {ioc.ioc_type}: {ioc.value}
+              </p>
+
+              <p className="mt-1 text-sm text-slate-400">
+                {ioc.description}
+              </p>
+            </div>
+
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-bold ${
+                ioc.severity === "HIGH"
+                  ? "bg-red-500/10 text-red-300"
+                  : ioc.severity === "MEDIUM"
+                  ? "bg-yellow-500/10 text-yellow-300"
+                  : "bg-emerald-500/10 text-emerald-300"
+              }`}
+            >
+              {ioc.severity}
+            </span>
+          </div>
+        </div>
+      ))}
+
+      {(report?.threat_intel?.recent_iocs || []).length === 0 && (
+        <EmptyText text="No IOC records available." />
+      )}
+    </div>
+
+    <p className="mt-5 text-sm text-cyan-300">
+      {report?.threat_intel?.status}
+    </p>
+  </div>
+</div>
+
+
             <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
               <Panel title="Top Event Types">
                 {(report?.events?.top_event_types || []).length > 0 ? (
