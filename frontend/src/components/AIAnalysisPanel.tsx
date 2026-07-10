@@ -75,7 +75,7 @@ export default function AIAnalysisPanel() {
           </span>
 
           <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-sm font-semibold text-cyan-300">
-            AI V2
+            AI V3
           </span>
         </div>
       </div>

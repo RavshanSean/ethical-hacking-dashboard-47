@@ -9,20 +9,50 @@ import {
   Upload,
   Bug,
   ScanSearch,
+  LoaderCircle,
 } from "lucide-react";
+
+type FileScanResult = {
+  filename?: string;
+  entropy?: number;
+  detected_file_type?: string;
+  risk_score?: number;
+  threat_level?: string;
+  file_size?: number;
+  engine_version?: string;
+  status?: string;
+  sha256?: string;
+  reasons?: string[];
+  ai_summary?: string;
+  archive_findings?: string[];
+  suspicious_script_patterns?: string[];
+  hash_reputation?: {
+    status?: string;
+    known?: boolean;
+    threat?: string | null;
+    category?: string;
+    source?: string;
+    risk_score?: number;
+  };
+};
 
 export default function FileScannerPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [scanResult, setScanResult] = useState<any>(null);
+  const [scanResult, setScanResult] = useState<FileScanResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
   const reportRef = useRef<HTMLDivElement | null>(null);
 
   async function scanFile() {
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      setError("Please choose a file before scanning.");
+      return;
+    }
 
     setLoading(true);
     setError("");
+    setScanResult(null);
 
     const formData = new FormData();
     formData.append("file", selectedFile);
@@ -34,7 +64,11 @@ export default function FileScannerPage() {
       });
 
       if (!response.ok) {
-        throw new Error("File scan failed");
+        const errorData = await response.json().catch(() => null);
+
+        throw new Error(
+          errorData?.detail || "File scan failed"
+        );
       }
 
       const data = await response.json();
@@ -46,17 +80,29 @@ export default function FileScannerPage() {
           block: "start",
         });
       }, 100);
-    } catch {
-      setError("File scan failed. Please try another file.");
+    } catch (error) {
+      console.error("File scan failed:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "File scan failed. Please try another file."
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  const threatCount = scanResult?.threat_level === "HIGH" ? 1 : 0;
-  const suspiciousCount = scanResult?.threat_level === "MEDIUM" ? 1 : 0;
+  const threatLevel = scanResult?.threat_level || "UNKNOWN";
+  const riskScore = scanResult?.risk_score ?? 0;
+
+  const threatCount = threatLevel === "HIGH" ? 1 : 0;
+  const suspiciousCount = threatLevel === "MEDIUM" ? 1 : 0;
   const filesScanned = scanResult ? 1 : 0;
-  const uploadQueue = selectedFile && !scanResult ? 1 : 0;
+  const uploadQueue = selectedFile && !scanResult && !loading ? 1 : 0;
+
+  const reasons = scanResult?.reasons || [];
+  const archiveFindings = scanResult?.archive_findings || [];
+  const scriptPatterns = scanResult?.suspicious_script_patterns || [];
 
   return (
     <div className="min-h-screen bg-[#050816] text-white">
@@ -77,7 +123,8 @@ export default function FileScannerPage() {
 
                 <p className="mt-3 max-w-3xl text-gray-400">
                   Upload files for malware detection, suspicious behavior
-                  analysis, and threat classification.
+                  analysis, archive inspection, hash intelligence, and threat
+                  classification.
                 </p>
               </div>
 
@@ -86,11 +133,11 @@ export default function FileScannerPage() {
 
                 <div>
                   <p className="text-xs text-gray-500">
-                    Malware Engine
+                    Analysis Mode
                   </p>
 
                   <p className="text-lg font-bold text-orange-300">
-                    ACTIVE
+                    On Demand
                   </p>
                 </div>
               </div>
@@ -98,7 +145,7 @@ export default function FileScannerPage() {
 
             <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-4">
               <StatCard
-                title="Threats Found"
+                title="Current Threats"
                 value={threatCount}
                 icon={<ShieldAlert className="text-red-400" />}
                 textColor="text-red-400"
@@ -106,7 +153,7 @@ export default function FileScannerPage() {
               />
 
               <StatCard
-                title="Suspicious Files"
+                title="Current Suspicious"
                 value={suspiciousCount}
                 icon={<FileWarning className="text-yellow-300" />}
                 textColor="text-yellow-300"
@@ -114,7 +161,7 @@ export default function FileScannerPage() {
               />
 
               <StatCard
-                title="Files Scanned"
+                title="Current Scan"
                 value={filesScanned}
                 icon={<ScanSearch className="text-green-400" />}
                 textColor="text-green-400"
@@ -138,20 +185,20 @@ export default function FileScannerPage() {
                   </h2>
 
                   <span className="rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1 text-xs text-orange-300">
-                    ANALYSIS LAB
+                    STATIC ANALYSIS
                   </span>
                 </div>
 
-                <div className="mt-6 flex h-[400px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-orange-500/20 bg-black">
+                <div className="mt-6 flex min-h-[400px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-orange-500/20 bg-black p-6">
                   <Upload className="text-orange-300" size={70} />
 
                   <p className="mt-6 text-2xl font-bold text-orange-300">
-                    Drag & Drop Files
+                    Choose File
                   </p>
 
                   <p className="mt-3 max-w-md text-center text-sm text-gray-500">
                     Upload executables, archives, documents, scripts, or
-                    suspicious payloads for static analysis.
+                    suspicious payloads for local backend analysis.
                   </p>
 
                   <input
@@ -164,18 +211,44 @@ export default function FileScannerPage() {
                     className="mt-6 block w-full max-w-md rounded-xl border border-orange-500/20 bg-black p-3 text-sm text-gray-300"
                   />
 
+                  {selectedFile && (
+                    <p className="mt-3 max-w-md break-all text-center text-sm text-slate-400">
+                      Selected: {selectedFile.name}
+                    </p>
+                  )}
+
                   <button
                     onClick={scanFile}
                     disabled={!selectedFile || loading}
                     className="mt-4 rounded-xl bg-orange-500 px-6 py-3 font-semibold text-black transition hover:bg-orange-400 disabled:bg-gray-700 disabled:text-gray-400"
                   >
-                    {loading ? "Scanning..." : "Scan File"}
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <LoaderCircle className="animate-spin" size={18} />
+                        Scanning...
+                      </span>
+                    ) : (
+                      "Scan File"
+                    )}
                   </button>
                 </div>
+
+                {loading && (
+                  <div className="mt-5 rounded-xl border border-orange-500/20 bg-orange-500/5 p-4 text-sm text-orange-200">
+                    File analysis is running. The report will appear when the
+                    backend finishes scanning.
+                  </div>
+                )}
 
                 {error && (
                   <div className="mt-5 rounded-xl border border-red-500/30 bg-black p-4 text-sm text-red-400">
                     {error}
+                  </div>
+                )}
+
+                {!scanResult && !loading && !error && (
+                  <div className="mt-5 rounded-xl border border-white/5 bg-black/30 p-4 text-sm text-slate-500">
+                    No file scan report yet.
                   </div>
                 )}
 
@@ -189,21 +262,21 @@ export default function FileScannerPage() {
                     </h3>
 
                     <div className="mt-4 grid grid-cols-1 gap-3 text-sm text-gray-300 md:grid-cols-2">
-                      <p>Filename: {scanResult.filename}</p>
-                      <p>Entropy: {scanResult.entropy}</p>
-                      <p>Type: {scanResult.detected_file_type}</p>
-                      <p>Risk: {scanResult.risk_score}/100</p>
-                      <p>Threat: {scanResult.threat_level}</p>
-                      <p>Size: {scanResult.file_size} bytes</p>
-                      <p>Engine: {scanResult.engine_version}</p>
-                      <p>Status: {scanResult.status}</p>
+                      <InfoLine label="Filename" value={scanResult.filename || "Unknown"} />
+                      <InfoLine label="Entropy" value={String(scanResult.entropy ?? "Unknown")} />
+                      <InfoLine label="Type" value={scanResult.detected_file_type || "Unknown"} />
+                      <InfoLine label="Risk" value={`${riskScore}/100`} />
+                      <InfoLine label="Threat" value={threatLevel} />
+                      <InfoLine label="Size" value={`${scanResult.file_size ?? "Unknown"} bytes`} />
+                      <InfoLine label="Engine" value={scanResult.engine_version || "Unknown"} />
+                      <InfoLine label="Status" value={scanResult.status || "Unknown"} />
                     </div>
 
                     <div className="mt-4 rounded-lg border border-orange-500/10 bg-[#050816] p-3">
                       <p className="text-xs text-gray-500">SHA256</p>
 
                       <p className="mt-1 break-all text-xs text-orange-200">
-                        {scanResult.sha256}
+                        {scanResult.sha256 || "Unknown"}
                       </p>
                     </div>
 
@@ -214,22 +287,12 @@ export default function FileScannerPage() {
                         </p>
 
                         <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-gray-300 md:grid-cols-2">
-                          <p>Status: {scanResult.hash_reputation.status}</p>
-                          <p>
-                            Known:{" "}
-                            {String(scanResult.hash_reputation.known)}
-                          </p>
-                          <p>
-                            Threat:{" "}
-                            {scanResult.hash_reputation.threat || "None"}
-                          </p>
-                          <p>
-                            Category: {scanResult.hash_reputation.category}
-                          </p>
-                          <p>Source: {scanResult.hash_reputation.source}</p>
-                          <p>
-                            Risk: {scanResult.hash_reputation.risk_score}/100
-                          </p>
+                          <InfoLine label="Status" value={scanResult.hash_reputation.status || "Unknown"} />
+                          <InfoLine label="Known" value={String(scanResult.hash_reputation.known ?? "Unknown")} />
+                          <InfoLine label="Threat" value={scanResult.hash_reputation.threat || "None"} />
+                          <InfoLine label="Category" value={scanResult.hash_reputation.category || "Unknown"} />
+                          <InfoLine label="Source" value={scanResult.hash_reputation.source || "Unknown"} />
+                          <InfoLine label="Risk" value={`${scanResult.hash_reputation.risk_score ?? 0}/100`} />
                         </div>
                       </div>
                     )}
@@ -251,48 +314,48 @@ export default function FileScannerPage() {
                         Reasons
                       </p>
 
-                      <ul className="mt-2 space-y-1 text-sm text-gray-300">
-                        {scanResult.reasons?.map(
-                          (reason: string, index: number) => (
+                      {reasons.length > 0 ? (
+                        <ul className="mt-2 space-y-1 text-sm text-gray-300">
+                          {reasons.map((reason, index) => (
                             <li key={index}>• {reason}</li>
-                          )
-                        )}
-                      </ul>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-sm text-slate-500">
+                          No detailed reasons were returned.
+                        </p>
+                      )}
                     </div>
 
-                    {scanResult.archive_findings?.length > 0 && (
+                    {archiveFindings.length > 0 && (
                       <div className="mt-6">
                         <h3 className="mb-2 font-semibold text-orange-400">
                           Archive Findings
                         </h3>
 
                         <ul className="space-y-2 text-sm text-orange-200">
-                          {scanResult.archive_findings.map(
-                            (finding: string, index: number) => (
-                              <li key={index}>• {finding}</li>
-                            )
-                          )}
+                          {archiveFindings.map((finding, index) => (
+                            <li key={index}>• {finding}</li>
+                          ))}
                         </ul>
                       </div>
                     )}
 
-                    {scanResult.suspicious_script_patterns?.length > 0 && (
+                    {scriptPatterns.length > 0 && (
                       <div className="mt-6">
                         <h3 className="mb-2 font-semibold text-red-400">
                           Suspicious Script Patterns
                         </h3>
 
                         <div className="flex flex-wrap gap-2">
-                          {scanResult.suspicious_script_patterns.map(
-                            (pattern: string, index: number) => (
-                              <span
-                                key={index}
-                                className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs text-red-300"
-                              >
-                                {pattern}
-                              </span>
-                            )
-                          )}
+                          {scriptPatterns.map((pattern, index) => (
+                            <span
+                              key={index}
+                              className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs text-red-300"
+                            >
+                              {pattern}
+                            </span>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -306,13 +369,13 @@ export default function FileScannerPage() {
                 </h2>
 
                 <p className="mt-2 text-sm text-gray-500">
-                  Displays the most recently completed file analysis.
+                  Displays the most recently completed file analysis in this session.
                 </p>
 
                 {scanResult ? (
                   <div className="mt-5 rounded-xl border border-green-500/20 bg-black/40 p-4">
                     <p className="font-semibold text-white">
-                      {scanResult.filename}
+                      {scanResult.filename || "Unknown file"}
                     </p>
 
                     <div className="mt-3 space-y-2 text-sm text-gray-300">
@@ -320,20 +383,20 @@ export default function FileScannerPage() {
                         Threat:{" "}
                         <span
                           className={
-                            scanResult.threat_level === "HIGH"
+                            threatLevel === "HIGH"
                               ? "text-red-300"
-                              : scanResult.threat_level === "MEDIUM"
+                              : threatLevel === "MEDIUM"
                               ? "text-yellow-300"
                               : "text-green-300"
                           }
                         >
-                          {scanResult.threat_level}
+                          {threatLevel}
                         </span>
                       </p>
 
-                      <p>Risk Score: {scanResult.risk_score}/100</p>
-                      <p>Status: {scanResult.status}</p>
-                      <p>Engine: {scanResult.engine_version}</p>
+                      <p>Risk Score: {riskScore}/100</p>
+                      <p>Status: {scanResult.status || "Unknown"}</p>
+                      <p>Engine: {scanResult.engine_version || "Unknown"}</p>
                     </div>
                   </div>
                 ) : (
@@ -349,6 +412,21 @@ export default function FileScannerPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+function InfoLine({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <p>
+      <span className="text-slate-500">{label}:</span>{" "}
+      <span className="text-slate-300">{value}</span>
+    </p>
   );
 }
 

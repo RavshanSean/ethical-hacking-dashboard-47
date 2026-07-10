@@ -13,15 +13,23 @@ type SystemMetrics = {
 
 export default function LiveSystemMonitor() {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
+  const [error, setError] = useState("");
 
   async function loadMetrics() {
     try {
       const response = await fetch(`${API_BASE_URL}/system/scan`);
+
+      if (!response.ok) {
+        throw new Error("Failed to load system metrics");
+      }
+
       const data = await response.json();
 
       setMetrics(data);
+      setError("");
     } catch (error) {
       console.error("Failed to load system metrics:", error);
+      setError("System metrics are currently unavailable.");
     }
   }
 
@@ -67,6 +75,12 @@ export default function LiveSystemMonitor() {
       <h3 className="mt-2 text-xl font-semibold text-white">
         Live System Monitor
       </h3>
+
+      {error && (
+        <p className="mt-3 text-sm text-red-300">
+          {error}
+        </p>
+      )}
 
       <div className="mt-5 grid grid-cols-2 gap-4">
         {cards.map((metric) => {

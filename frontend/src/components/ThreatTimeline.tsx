@@ -59,6 +59,12 @@ export default function ThreatTimeline() {
         </span>
       </div>
 
+      {timeline.length === 0 && (
+        <p className="mb-4 text-sm text-slate-500">
+          No timeline data available yet.
+        </p>
+      )}
+
       <div className="h-72 sm:h-80 lg:h-[350px] w-full min-w-0">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={timeline}>

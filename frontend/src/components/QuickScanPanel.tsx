@@ -25,7 +25,7 @@ export default function QuickScanPanel() {
       title: "System Scan",
       description: "Check local system health and security signals.",
       icon: Monitor,
-      href: "#",
+      href: "/system-scan",
       color: "text-violet-300",
     },
   ];

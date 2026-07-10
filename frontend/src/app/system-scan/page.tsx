@@ -3,7 +3,14 @@
 import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import { API_BASE_URL } from "@/config/api";
-import { Cpu, HardDrive, MemoryStick, Network, ShieldCheck } from "lucide-react";
+import {
+  Cpu,
+  HardDrive,
+  LoaderCircle,
+  MemoryStick,
+  Network,
+  ShieldCheck,
+} from "lucide-react";
 
 type SystemScanResult = {
   cpu_percent: number;
@@ -15,16 +22,25 @@ type SystemScanResult = {
 export default function SystemScanPage() {
   const [result, setResult] = useState<SystemScanResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function runScan() {
     setLoading(true);
+    setError("");
+    setResult(null);
 
     try {
       const response = await fetch(`${API_BASE_URL}/system/scan`);
+
+      if (!response.ok) {
+        throw new Error("System scan failed");
+      }
+
       const data = await response.json();
       setResult(data);
     } catch (error) {
       console.error("System scan failed:", error);
+      setError("System scan failed. Backend telemetry may be unavailable.");
     } finally {
       setLoading(false);
     }
@@ -41,6 +57,10 @@ export default function SystemScanPage() {
         )
       )
     : null;
+
+  const networkHealthy =
+    result?.network_status?.toLowerCase() === "online" ||
+    result?.network_status?.toLowerCase() === "connected";
 
   return (
     <div className="min-h-screen bg-[#020711] text-white">
@@ -66,8 +86,33 @@ export default function SystemScanPage() {
               disabled={loading}
               className="mt-8 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-6 py-3 font-semibold text-cyan-300 transition hover:border-cyan-300/50 hover:bg-cyan-400/15 disabled:opacity-50"
             >
-              {loading ? "Scanning..." : "Run System Scan"}
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <LoaderCircle className="animate-spin" size={18} />
+                  Scanning...
+                </span>
+              ) : (
+                "Run System Scan"
+              )}
             </button>
+
+            {!result && !loading && !error && (
+              <div className="mt-8 rounded-2xl border border-white/5 bg-[#07111f]/90 p-6 text-sm text-slate-400">
+                No system scan has been run yet.
+              </div>
+            )}
+
+            {loading && (
+              <div className="mt-8 rounded-2xl border border-cyan-400/10 bg-cyan-400/5 p-6 text-sm text-cyan-200">
+                Collecting CPU, memory, disk, and network telemetry...
+              </div>
+            )}
+
+            {error && (
+              <div className="mt-8 rounded-2xl border border-red-400/20 bg-red-500/10 p-6 text-sm text-red-300">
+                {error}
+              </div>
+            )}
 
             {result && (
               <>
@@ -95,8 +140,8 @@ export default function SystemScanPage() {
 
                   <MetricCard
                     title="Network"
-                    value={result.network_status}
-                    status="Healthy"
+                    value={result.network_status || "Unknown"}
+                    status={networkHealthy ? "Healthy" : "Warning"}
                     icon={<Network />}
                   />
                 </div>
@@ -107,12 +152,16 @@ export default function SystemScanPage() {
 
                     <div>
                       <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">
-                        Overall Security Score
+                        Overall System Score
                       </p>
 
                       <h2 className="mt-2 text-5xl font-semibold text-white">
                         {score}/100
                       </h2>
+
+                      <p className="mt-2 text-sm text-slate-400">
+                        Calculated from current CPU, RAM, and disk pressure.
+                      </p>
                     </div>
                   </div>
                 </div>

@@ -71,9 +71,7 @@ export default function DashboardHeader() {
 
     loadAlerts();
 
-    const interval = setInterval(() => {
-      loadAlerts();
-    }, 5000);
+    const interval = setInterval(loadAlerts, 5000);
 
     return () => clearInterval(interval);
   }, []);
@@ -102,9 +100,7 @@ export default function DashboardHeader() {
       }
     }
 
-    const timeout = setTimeout(() => {
-      runSearch();
-    }, 350);
+    const timeout = setTimeout(runSearch, 350);
 
     return () => clearTimeout(timeout);
   }, [searchQuery]);
@@ -114,10 +110,6 @@ export default function DashboardHeader() {
     localStorage.removeItem("user");
     router.push("/login");
   }
-
-  const filteredAlerts = alerts.filter((alert) =>
-    JSON.stringify(alert).toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const highAlerts = alerts.filter((alert) => alert.severity === "HIGH").length;
   const mediumAlerts = alerts.filter((alert) => alert.severity === "MEDIUM").length;
@@ -134,6 +126,23 @@ export default function DashboardHeader() {
 
     return "bg-emerald-400 text-black shadow-[0_0_18px_rgba(52,211,153,0.55)]";
   }
+
+  const protectionLabel =
+    highAlerts > 0 ? "Attention" : mediumAlerts > 0 ? "Warning" : "Stable";
+
+  const protectionColor =
+    highAlerts > 0
+      ? "text-red-400"
+      : mediumAlerts > 0
+      ? "text-yellow-300"
+      : "text-emerald-400";
+
+  const protectionBorder =
+    highAlerts > 0
+      ? "border-red-400/15"
+      : mediumAlerts > 0
+      ? "border-yellow-400/15"
+      : "border-emerald-400/15";
 
   return (
     <header className="mb-8 overflow-visible rounded-[24px] border border-cyan-400/10 bg-[#050b16] shadow-[0_0_45px_rgba(0,255,220,0.05)]">
@@ -186,87 +195,37 @@ export default function DashboardHeader() {
                 </div>
 
                 <div className="mt-4 space-y-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.25em] text-cyan-300">
-                      Events
-                    </p>
-
-                    <div className="mt-2 space-y-2">
-                      {searchEvents.length === 0 && (
-                        <p className="rounded-xl border border-white/5 bg-black/30 p-3 text-xs text-slate-500">
-                          No matching events.
-                        </p>
-                      )}
-
-                      {searchEvents.map((event) => (
-                        <div
+                  <SearchSection title="Events">
+                    {searchEvents.length === 0 ? (
+                      <EmptySearch text="No matching events." />
+                    ) : (
+                      searchEvents.map((event) => (
+                        <SearchResultCard
                           key={`event-${event.id}`}
-                          className="rounded-xl border border-white/5 bg-black/40 p-3"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="text-xs font-semibold text-cyan-300">
-                              {event.type.replaceAll("_", " ")}
-                            </p>
+                          title={event.type.replaceAll("_", " ")}
+                          badge={event.severity}
+                          description={event.message}
+                          severity={event.severity}
+                        />
+                      ))
+                    )}
+                  </SearchSection>
 
-                            <span
-                              className={`text-xs font-bold ${
-                                event.severity === "HIGH"
-                                  ? "text-red-300"
-                                  : event.severity === "MEDIUM"
-                                  ? "text-yellow-300"
-                                  : "text-emerald-300"
-                              }`}
-                            >
-                              {event.severity}
-                            </span>
-                          </div>
-
-                          <p className="mt-2 text-xs text-slate-300">
-                            {event.message}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.25em] text-cyan-300">
-                      Scan Results
-                    </p>
-
-                    <div className="mt-2 space-y-2">
-                      {searchScans.length === 0 && (
-                        <p className="rounded-xl border border-white/5 bg-black/30 p-3 text-xs text-slate-500">
-                          No matching scans.
-                        </p>
-                      )}
-
-                      {searchScans.map((scan) => (
-                        <div
+                  <SearchSection title="Scan Results">
+                    {searchScans.length === 0 ? (
+                      <EmptySearch text="No matching scans." />
+                    ) : (
+                      searchScans.map((scan) => (
+                        <SearchResultCard
                           key={`scan-${scan.id}`}
-                          className="rounded-xl border border-white/5 bg-black/40 p-3"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="text-xs font-semibold text-white">
-                              {scan.domain}
-                            </p>
-
-                            <span className="text-xs font-bold text-cyan-300">
-                              {scan.risk_score}/100
-                            </span>
-                          </div>
-
-                          <p className="mt-2 break-all text-xs text-slate-400">
-                            {scan.url}
-                          </p>
-
-                          <p className="mt-1 text-xs text-slate-500">
-                            {scan.threat_level}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                          title={scan.domain}
+                          badge={`${scan.risk_score}/100`}
+                          description={scan.url}
+                          severity={scan.threat_level}
+                        />
+                      ))
+                    )}
+                  </SearchSection>
                 </div>
               </div>
             )}
@@ -296,35 +255,24 @@ export default function DashboardHeader() {
                   </h3>
 
                   <span className="text-xs text-cyan-300">
-                    {filteredAlerts.length} active
+                    {alerts.length} active
                   </span>
                 </div>
 
                 <div className="mt-4 grid grid-cols-3 gap-2">
-                  <div className="rounded-xl border border-red-400/20 bg-red-500/5 p-2 text-center">
-                    <p className="text-xs text-slate-500">High</p>
-                    <p className="text-sm font-bold text-red-300">{highAlerts}</p>
-                  </div>
-
-                  <div className="rounded-xl border border-yellow-400/20 bg-yellow-500/5 p-2 text-center">
-                    <p className="text-xs text-slate-500">Medium</p>
-                    <p className="text-sm font-bold text-yellow-300">{mediumAlerts}</p>
-                  </div>
-
-                  <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/5 p-2 text-center">
-                    <p className="text-xs text-slate-500">Low</p>
-                    <p className="text-sm font-bold text-emerald-300">{lowAlerts}</p>
-                  </div>
+                  <AlertCount label="High" count={highAlerts} color="text-red-300" border="border-red-400/20" bg="bg-red-500/5" />
+                  <AlertCount label="Medium" count={mediumAlerts} color="text-yellow-300" border="border-yellow-400/20" bg="bg-yellow-500/5" />
+                  <AlertCount label="Low" count={lowAlerts} color="text-emerald-300" border="border-emerald-400/20" bg="bg-emerald-500/5" />
                 </div>
 
                 <div className="mt-4 space-y-3">
-                  {filteredAlerts.length === 0 && (
+                  {alerts.length === 0 && (
                     <div className="rounded-xl border border-sky-400/20 bg-sky-500/5 p-3 text-sm text-sky-300">
-                      No matching alerts.
+                      No recent alerts.
                     </div>
                   )}
 
-                  {filteredAlerts.map((alert) => (
+                  {alerts.map((alert) => (
                     <div
                       key={alert.id}
                       className="rounded-xl border border-white/5 bg-black/40 p-3"
@@ -334,17 +282,7 @@ export default function DashboardHeader() {
                           {alert.threat_type}
                         </p>
 
-                        <span
-                          className={`text-xs font-bold ${
-                            alert.severity === "HIGH"
-                              ? "text-red-300"
-                              : alert.severity === "MEDIUM"
-                              ? "text-yellow-300"
-                              : "text-emerald-300"
-                          }`}
-                        >
-                          {alert.severity}
-                        </span>
+                        <SeverityText severity={alert.severity} />
                       </div>
 
                       <p className="mt-2 text-sm text-slate-300">
@@ -361,12 +299,14 @@ export default function DashboardHeader() {
             )}
           </div>
 
-          <div className="flex items-center gap-3 rounded-2xl border border-emerald-400/15 bg-black/45 px-4 py-3">
-            <ShieldCheck className="text-emerald-400" size={21} />
+          <div className={`flex items-center gap-3 rounded-2xl border ${protectionBorder} bg-black/45 px-4 py-3`}>
+            <ShieldCheck className={protectionColor} size={21} />
 
             <div>
-              <p className="text-xs text-slate-500">Protection</p>
-              <p className="text-sm font-bold text-emerald-400">Online</p>
+              <p className="text-xs text-slate-500">Telemetry</p>
+              <p className={`text-sm font-bold ${protectionColor}`}>
+                {protectionLabel}
+              </p>
             </div>
           </div>
 
@@ -377,7 +317,9 @@ export default function DashboardHeader() {
               <p className="text-sm font-semibold text-white">
                 {user?.username || "Analyst"}
               </p>
-              <p className="text-xs text-emerald-400">Pro Plan</p>
+              <p className="text-xs text-slate-500">
+                {user?.email || "Signed in"}
+              </p>
             </div>
 
             <button
@@ -394,4 +336,97 @@ export default function DashboardHeader() {
       <div className="h-px bg-gradient-to-r from-transparent via-cyan-300/45 to-transparent" />
     </header>
   );
+}
+
+function SearchSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-[0.25em] text-cyan-300">
+        {title}
+      </p>
+
+      <div className="mt-2 space-y-2">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function SearchResultCard({
+  title,
+  badge,
+  description,
+  severity,
+}: {
+  title: string;
+  badge: string;
+  description: string;
+  severity: string;
+}) {
+  return (
+    <div className="rounded-xl border border-white/5 bg-black/40 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-semibold text-white">
+          {title}
+        </p>
+
+        <span className={`text-xs font-bold ${getSeverityColor(severity)}`}>
+          {badge}
+        </span>
+      </div>
+
+      <p className="mt-2 break-all text-xs text-slate-400">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function EmptySearch({ text }: { text: string }) {
+  return (
+    <p className="rounded-xl border border-white/5 bg-black/30 p-3 text-xs text-slate-500">
+      {text}
+    </p>
+  );
+}
+
+function AlertCount({
+  label,
+  count,
+  color,
+  border,
+  bg,
+}: {
+  label: string;
+  count: number;
+  color: string;
+  border: string;
+  bg: string;
+}) {
+  return (
+    <div className={`rounded-xl border ${border} ${bg} p-2 text-center`}>
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className={`text-sm font-bold ${color}`}>{count}</p>
+    </div>
+  );
+}
+
+function SeverityText({ severity }: { severity: string }) {
+  return (
+    <span className={`text-xs font-bold ${getSeverityColor(severity)}`}>
+      {severity}
+    </span>
+  );
+}
+
+function getSeverityColor(severity: string) {
+  if (severity === "HIGH") return "text-red-300";
+  if (severity === "MEDIUM") return "text-yellow-300";
+  return "text-emerald-300";
 }

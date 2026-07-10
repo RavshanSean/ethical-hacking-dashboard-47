@@ -22,14 +22,23 @@ type ProcessesResponse = {
 export default function ProcessesPage() {
   const [data, setData] = useState<ProcessesResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   async function loadProcesses() {
     try {
       const response = await fetch(`${API_BASE_URL}/processes`);
+
+      if (!response.ok) {
+        throw new Error("Failed to load processes");
+      }
+
       const result = await response.json();
+
       setData(result);
+      setError("");
     } catch (error) {
       console.error("Failed to load processes:", error);
+      setError("Process telemetry is currently unavailable.");
     } finally {
       setLoading(false);
     }
@@ -44,6 +53,9 @@ export default function ProcessesPage() {
 
     return () => clearInterval(interval);
   }, []);
+
+  const processes = data?.processes || [];
+  const isLive = !error && Boolean(data);
 
   return (
     <div className="min-h-screen bg-[#020711] text-white">
@@ -74,7 +86,7 @@ export default function ProcessesPage() {
 
               <StatCard
                 title="Displayed"
-                value={data ? String(data.processes.length) : "--"}
+                value={data ? String(processes.length) : "--"}
                 icon={<Database />}
               />
 
@@ -85,8 +97,14 @@ export default function ProcessesPage() {
               />
             </div>
 
+            {error && (
+              <div className="mt-8 rounded-2xl border border-red-400/20 bg-red-500/10 p-6 text-sm text-red-300">
+                {error}
+              </div>
+            )}
+
             <div className="mt-8 rounded-2xl border border-cyan-400/10 bg-[#07111f]/90 p-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">
                     Process Table
@@ -97,13 +115,19 @@ export default function ProcessesPage() {
                   </h2>
                 </div>
 
-                <span className="rounded-full border border-emerald-400/15 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-300">
-                  LIVE
+                <span
+                  className={`rounded-full border px-3 py-1 text-xs ${
+                    isLive
+                      ? "border-emerald-400/15 bg-emerald-400/10 text-emerald-300"
+                      : "border-slate-400/15 bg-slate-400/10 text-slate-300"
+                  }`}
+                >
+                  {isLive ? "LIVE" : "UNAVAILABLE"}
                 </span>
               </div>
 
-              <div className="mt-6 overflow-hidden rounded-2xl border border-white/5">
-                <table className="w-full text-left text-sm">
+              <div className="mt-6 overflow-x-auto rounded-2xl border border-white/5">
+                <table className="min-w-[760px] w-full text-left text-sm">
                   <thead className="bg-black/50 text-xs uppercase tracking-[0.2em] text-slate-500">
                     <tr>
                       <th className="px-4 py-3">Process</th>
@@ -126,14 +150,25 @@ export default function ProcessesPage() {
                       </tr>
                     )}
 
+                    {!loading && !error && processes.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="px-4 py-6 text-center text-slate-400"
+                        >
+                          No running processes returned by the backend.
+                        </td>
+                      </tr>
+                    )}
+
                     {!loading &&
-                      data?.processes.map((process) => (
+                      processes.map((process) => (
                         <tr
                           key={process.pid}
                           className="bg-black/20 transition hover:bg-cyan-400/5"
                         >
                           <td className="px-4 py-3 font-medium text-white">
-                            {process.name}
+                            {process.name || "Unknown"}
                           </td>
 
                           <td className="px-4 py-3 text-slate-400">
@@ -141,11 +176,11 @@ export default function ProcessesPage() {
                           </td>
 
                           <td className="px-4 py-3 text-cyan-300">
-                            {process.cpu_percent}%
+                            {process.cpu_percent ?? 0}%
                           </td>
 
                           <td className="px-4 py-3 text-slate-300">
-                            {process.memory_mb} MB
+                            {process.memory_mb ?? 0} MB
                           </td>
 
                           <td className="px-4 py-3">
@@ -156,7 +191,7 @@ export default function ProcessesPage() {
                                   : "bg-slate-400/10 text-slate-300"
                               }`}
                             >
-                              {process.status}
+                              {process.status || "unknown"}
                             </span>
                           </td>
                         </tr>

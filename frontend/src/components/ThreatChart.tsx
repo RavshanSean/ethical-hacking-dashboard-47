@@ -87,7 +87,13 @@ export default function ThreatChart() {
 
       </div>
 
-      <div className="h-[350px]">
+      {stats.total_events === 0 && (
+        <p className="mb-4 text-sm text-slate-500">
+          No threat distribution data available yet.
+        </p>
+      )}
+
+      <div className="h-72 sm:h-80 lg:h-[350px]">
 
         <ResponsiveContainer width="100%" height="100%">
 

@@ -20,17 +20,17 @@ type ScanResult = {
   domain: string;
   resolved_ip: string;
   final_url: string;
-  redirect_chain: string[];
+  redirect_chain?: string[];
   redirect_count: number;
   https_enabled: boolean;
   http_status_code: number | null;
-  suspicious_domain_indicators: string[];
+  suspicious_domain_indicators?: string[];
   registrar: string;
   creation_date: string;
   expiration_date: string;
   risk_score: number;
   threat_level: string;
-  reasons: string[];
+  reasons?: string[];
   scripts_detected: number;
   login_forms_detected: number;
   password_fields_detected: number;
@@ -42,23 +42,22 @@ type ScanResult = {
   engine_version: string;
   analysis_source: string;
   ai_summary?: string;
-  ip_intelligence: {
-    ip: string;
-    country: string;
-    region: string;
-    city: string;
-    isp: string;
-    org: string;
-    asn: string;
-};
-  ssl_intelligence: {
-  valid: boolean;
-  issuer: string;
-  expires_at: string;
-  days_left: number | null;
-  error?: string;
-};
-  
+  ip_intelligence?: {
+    ip?: string;
+    country?: string;
+    region?: string;
+    city?: string;
+    isp?: string;
+    org?: string;
+    asn?: string;
+  };
+  ssl_intelligence?: {
+    valid?: boolean;
+    issuer?: string;
+    expires_at?: string;
+    days_left?: number | null;
+    error?: string;
+  };
 };
 
 export default function UrlScannerPage() {
@@ -68,8 +67,16 @@ export default function UrlScannerPage() {
   const [error, setError] = useState("");
 
   async function scanWebsite() {
+    const cleanUrl = url.trim();
+
+    if (!cleanUrl) {
+      setError("Please enter a URL before scanning.");
+      return;
+    }
+
     setLoading(true);
     setError("");
+    setResult(null);
 
     try {
       const response = await fetch(`${API_BASE_URL}/scan-url`, {
@@ -77,7 +84,7 @@ export default function UrlScannerPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url: cleanUrl }),
       });
 
       if (!response.ok) {
@@ -86,21 +93,26 @@ export default function UrlScannerPage() {
 
       const data = await response.json();
       setResult(data);
-    } catch {
+    } catch (error) {
+      console.error("URL scan failed:", error);
       setError("Scan failed. The site may be offline, invalid, or blocked.");
     } finally {
       setLoading(false);
     }
   }
 
+  const suspiciousIndicators = result?.suspicious_domain_indicators || [];
+  const redirectChain = result?.redirect_chain || [];
+  const reasons = result?.reasons || [];
+
   const threatStyle =
-    result?.risk_score && result.risk_score >= 70
+    result?.risk_score !== undefined && result.risk_score >= 70
       ? {
           text: "text-red-400",
           border: "border-red-500/30",
           bg: "bg-red-500/10",
         }
-      : result?.risk_score && result.risk_score >= 30
+      : result?.risk_score !== undefined && result.risk_score >= 30
       ? {
           text: "text-yellow-300",
           border: "border-yellow-500/30",
@@ -134,24 +146,29 @@ export default function UrlScannerPage() {
               </p>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
-              <div className="xl:col-span-2 rounded-2xl border border-green-500/20 bg-[#0b1220] p-6">
+            <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
+              <div className="rounded-2xl border border-green-500/20 bg-[#0b1220] p-6 xl:col-span-2">
                 <h2 className="text-2xl font-semibold text-green-300">
                   Scan Target
                 </h2>
 
-                <div className="mt-5 flex flex-col sm:flex-row gap-3">
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                   <input
                     value={url}
                     onChange={(event) => setUrl(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        scanWebsite();
+                      }
+                    }}
                     type="text"
                     placeholder="https://example.com"
-                    className="flex-1 rounded-xl border border-green-500/30 bg-black px-4 py-3 text-white outline-none"
+                    className="flex-1 rounded-xl border border-green-500/30 bg-black px-4 py-3 text-white outline-none placeholder:text-slate-500"
                   />
 
                   <button
                     onClick={scanWebsite}
-                    disabled={loading || url.length === 0}
+                    disabled={loading || url.trim().length === 0}
                     className="rounded-xl bg-green-500 px-6 py-3 font-bold text-black transition hover:bg-green-400 disabled:bg-gray-700 disabled:text-gray-400"
                   >
                     {loading ? (
@@ -171,8 +188,14 @@ export default function UrlScannerPage() {
                   </div>
                 )}
 
+                {!result && !loading && !error && (
+                  <div className="mt-6 rounded-xl border border-white/5 bg-black/30 p-4 text-sm text-slate-400">
+                    Enter a URL to begin scanning. Results will appear here.
+                  </div>
+                )}
+
                 {result && (
-                  <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
                     <div
                       className={`rounded-xl border ${threatStyle.border} ${threatStyle.bg} p-4`}
                     >
@@ -221,46 +244,52 @@ export default function UrlScannerPage() {
                       URL Intelligence
                     </h3>
 
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                      <InfoCard label="Resolved IP" value={result.resolved_ip} />
-                      <InfoCard label="Country" value={result.ip_intelligence.country} />
-                      <InfoCard label="Region" value={result.ip_intelligence.region} />
-                      <InfoCard label="City" value={result.ip_intelligence.city} />
-                      <InfoCard label="ISP" value={result.ip_intelligence.isp} />
-                      <InfoCard label="Organization" value={result.ip_intelligence.org} />
-                      <InfoCard label="ASN" value={result.ip_intelligence.asn} />
-                      <InfoCard label="SSL Valid" value={String(result.ssl_intelligence.valid)} />
-                      <InfoCard label="SSL Issuer" value={result.ssl_intelligence.issuer} />
-                      <InfoCard label="SSL Expires" value={result.ssl_intelligence.expires_at} />
+                    <div className="mt-4 grid grid-cols-1 gap-4 text-sm md:grid-cols-2 lg:grid-cols-3">
+                      <InfoCard label="Resolved IP" value={result.resolved_ip || "Unknown"} />
+                      <InfoCard label="Country" value={result.ip_intelligence?.country || "Unknown"} />
+                      <InfoCard label="Region" value={result.ip_intelligence?.region || "Unknown"} />
+                      <InfoCard label="City" value={result.ip_intelligence?.city || "Unknown"} />
+                      <InfoCard label="ISP" value={result.ip_intelligence?.isp || "Unknown"} />
+                      <InfoCard label="Organization" value={result.ip_intelligence?.org || "Unknown"} />
+                      <InfoCard label="ASN" value={result.ip_intelligence?.asn || "Unknown"} />
+                      <InfoCard label="SSL Valid" value={String(result.ssl_intelligence?.valid ?? "Unknown")} />
+                      <InfoCard label="SSL Issuer" value={result.ssl_intelligence?.issuer || "Unknown"} />
+                      <InfoCard label="SSL Expires" value={result.ssl_intelligence?.expires_at || "Unknown"} />
                       <InfoCard
                         label="SSL Days Left"
                         value={
-                          result.ssl_intelligence.days_left !== null
+                          result.ssl_intelligence?.days_left !== null &&
+                          result.ssl_intelligence?.days_left !== undefined
                             ? String(result.ssl_intelligence.days_left)
                             : "Unknown"
                         }
                       />
-                      <InfoCard label="Final URL" value={result.final_url} />
+                      <InfoCard label="Final URL" value={result.final_url || "Unknown"} />
                       <InfoCard label="Redirect Count" value={String(result.redirect_count)} />
                       <InfoCard label="HTTPS Enabled" value={String(result.https_enabled)} />
                       <InfoCard
                         label="HTTP Status"
-                        value={result.http_status_code ? String(result.http_status_code) : "Unknown"}
+                        value={
+                          result.http_status_code !== null &&
+                          result.http_status_code !== undefined
+                            ? String(result.http_status_code)
+                            : "Unknown"
+                        }
                       />
                       <InfoCard
                         label="Suspicious Indicators"
-                        value={String(result.suspicious_domain_indicators.length)}
+                        value={String(suspiciousIndicators.length)}
                       />
                     </div>
 
-                    {result.redirect_chain.length > 0 && (
+                    {redirectChain.length > 0 && (
                       <div className="mt-5 rounded-xl border border-cyan-500/10 bg-[#07111f] p-4">
                         <p className="text-sm font-semibold text-cyan-300">
                           Redirect Chain
                         </p>
 
                         <div className="mt-4 space-y-3">
-                          {result.redirect_chain.map((redirect, index) => (
+                          {redirectChain.map((redirect, index) => (
                             <div key={index} className="flex items-start gap-3">
                               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-cyan-400/20 bg-cyan-400/10 text-xs text-cyan-300">
                                 {index + 1}
@@ -293,14 +322,14 @@ export default function UrlScannerPage() {
                       </div>
                     )}
 
-                    {result.suspicious_domain_indicators.length > 0 && (
+                    {suspiciousIndicators.length > 0 && (
                       <div className="mt-5 rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-4">
                         <p className="text-sm font-semibold text-yellow-300">
                           Suspicious Domain Indicators
                         </p>
 
                         <ul className="mt-3 space-y-2 text-sm text-slate-300">
-                          {result.suspicious_domain_indicators.map((indicator, index) => (
+                          {suspiciousIndicators.map((indicator, index) => (
                             <li key={index}>• {indicator}</li>
                           ))}
                         </ul>
@@ -315,11 +344,17 @@ export default function UrlScannerPage() {
                       Security Reasons
                     </h3>
 
-                    <ul className="mt-3 space-y-2 text-gray-300">
-                      {result.reasons.map((reason, index) => (
-                        <li key={index}>• {reason}</li>
-                      ))}
-                    </ul>
+                    {reasons.length > 0 ? (
+                      <ul className="mt-3 space-y-2 text-gray-300">
+                        {reasons.map((reason, index) => (
+                          <li key={index}>• {reason}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-3 text-sm text-slate-500">
+                        No detailed reasons were returned for this scan.
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -345,23 +380,23 @@ export default function UrlScannerPage() {
                   Full Scan Details
                 </h2>
 
-                <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                  <InfoCard label="Domain" value={result.domain} />
-                  <InfoCard label="Resolved IP" value={result.resolved_ip} />
-                  <InfoCard label="Final URL" value={result.final_url} />
+                <div className="mt-5 grid grid-cols-1 gap-4 text-sm md:grid-cols-2 lg:grid-cols-3">
+                  <InfoCard label="Domain" value={result.domain || "Unknown"} />
+                  <InfoCard label="Resolved IP" value={result.resolved_ip || "Unknown"} />
+                  <InfoCard label="Final URL" value={result.final_url || "Unknown"} />
                   <InfoCard label="Redirect Count" value={String(result.redirect_count)} />
                   <InfoCard label="HTTPS Enabled" value={String(result.https_enabled)} />
-                  <InfoCard label="Registrar" value={result.registrar} />
-                  <InfoCard label="Created" value={result.creation_date} />
-                  <InfoCard label="Expires" value={result.expiration_date} />
+                  <InfoCard label="Registrar" value={result.registrar || "Unknown"} />
+                  <InfoCard label="Created" value={result.creation_date || "Unknown"} />
+                  <InfoCard label="Expires" value={result.expiration_date || "Unknown"} />
                   <InfoCard label="Login Forms" value={String(result.login_forms_detected)} />
                   <InfoCard label="Password Fields" value={String(result.password_fields_detected)} />
                   <InfoCard label="Camera/Microphone" value={String(result.camera_microphone_access)} />
                   <InfoCard label="Location Access" value={String(result.location_access)} />
                   <InfoCard label="Notifications" value={String(result.notification_access)} />
-                  <InfoCard label="Scan Type" value={result.scan_type} />
-                  <InfoCard label="Engine Version" value={result.engine_version} />
-                  <InfoCard label="Analysis Source" value={result.analysis_source} />
+                  <InfoCard label="Scan Type" value={result.scan_type || "Unknown"} />
+                  <InfoCard label="Engine Version" value={result.engine_version || "Unknown"} />
+                  <InfoCard label="Analysis Source" value={result.analysis_source || "Unknown"} />
                 </div>
 
                 <p className="mt-5 text-sm text-yellow-300">

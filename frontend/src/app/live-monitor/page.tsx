@@ -2,7 +2,6 @@
 
 import Sidebar from "@/components/Sidebar";
 import LiveMonitor from "@/components/LiveMonitor";
-import ThreatActivity from "@/components/ThreatActivity";
 
 export default function LiveMonitorPage() {
   return (
@@ -20,9 +19,12 @@ export default function LiveMonitorPage() {
               Live Monitor
             </h1>
 
-            <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <p className="mt-2 max-w-3xl text-sm text-slate-400">
+              Monitor real backend security events and live WebSocket updates.
+            </p>
+
+            <div className="mt-8">
               <LiveMonitor />
-              <ThreatActivity scanHistory={[]} />
             </div>
           </section>
         </main>
