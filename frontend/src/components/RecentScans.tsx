@@ -1,7 +1,7 @@
 "use client";
 
 import { API_BASE_URL } from "@/config/api";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type ThreatFilter = "ALL" | "HIGH" | "MEDIUM" | "LOW";
 
@@ -42,7 +42,7 @@ export default function RecentScans() {
     useState<ThreatFilter>("ALL");
   const [search, setSearch] = useState("");
 
-  async function loadScans() {
+  const loadScans = useCallback(async () => {
     try {
       const endpoint =
         threatFilter === "ALL"
@@ -58,7 +58,7 @@ export default function RecentScans() {
     } catch (error) {
       console.error("Failed to load saved scans:", error);
     }
-  }
+  }, [page, threatFilter]);
 
   async function loadScanDetails(scanId: number) {
     try {
@@ -87,7 +87,7 @@ export default function RecentScans() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [threatFilter, page]);
+  }, [loadScans]);
 
   return (
     <div className="rounded-2xl border border-green-500/20 bg-[#0b1220] p-6">

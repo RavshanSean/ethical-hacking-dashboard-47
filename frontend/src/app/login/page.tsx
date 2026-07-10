@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, LogIn } from "lucide-react";
+import { API_BASE_URL } from "@/config/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function LoginPage() {
     setMessage("");
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/auth/login", {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -40,9 +41,11 @@ export default function LoginPage() {
       localStorage.setItem("user", JSON.stringify(data.user));
 
       router.push("/");
-    } catch (error: any) {
-      setMessage(error.message);
-    } finally {
+    } catch (error: unknown) {
+      setMessage(
+        error instanceof Error ? error.message : "Login failed."
+      );
+    }finally {
       setLoading(false);
     }
   }
