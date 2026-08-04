@@ -1,11 +1,11 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import Sidebar from "@/components/Sidebar";
 import SystemOverview from "@/components/SystemOverview";
 import RecentScans from "@/components/RecentScans";
 import AIAnalysis from "@/components/AIAnalysis";
 import InfoCard from "@/components/InfoCard";
-import { API_BASE_URL } from "@/config/api";
 import { useState } from "react";
 import {
   ShieldCheck,
@@ -79,7 +79,7 @@ export default function UrlScannerPage() {
     setResult(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/scan-url`, {
+      const response = await apiFetch(`/scan-url`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -87,15 +87,24 @@ export default function UrlScannerPage() {
         body: JSON.stringify({ url: cleanUrl }),
       });
 
+      const data = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        throw new Error("Backend scan failed");
+        const detail =
+          typeof data?.detail === "string"
+            ? data.detail
+            : "Backend scan failed";
+        throw new Error(detail);
       }
 
-      const data = await response.json();
       setResult(data);
     } catch (error) {
       console.error("URL scan failed:", error);
-      setError("Scan failed. The site may be offline, invalid, or blocked.");
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Scan failed. The site may be offline, invalid, or blocked."
+      );
     } finally {
       setLoading(false);
     }
@@ -125,12 +134,12 @@ export default function UrlScannerPage() {
         };
 
   return (
-    <div className="min-h-screen bg-[#050816] text-white">
+    <div className="app-shell">
       <div className="flex">
         <Sidebar />
 
-        <main className="flex-1 p-6">
-          <section className="mx-auto max-w-7xl">
+        <main className="app-main">
+          <section className="app-frame">
             <div>
               <p className="text-sm uppercase tracking-[0.3em] text-green-400">
                 Investigation Workspace

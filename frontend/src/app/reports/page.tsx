@@ -1,9 +1,8 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import { API_BASE_URL } from "@/config/api";
-
 type ReportEvent = {
   type?: string;
   severity?: string;
@@ -89,8 +88,7 @@ export default function ReportsPage() {
     setError("");
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/reports/security-summary`
+      const response = await apiFetch(`/reports/security-summary`
       );
 
       if (!response.ok) {
@@ -190,12 +188,12 @@ export default function ReportsPage() {
   const iocTypes = report?.threat_intel?.ioc_types || [];
 
   return (
-    <div className="min-h-screen bg-[#020711] text-white">
+    <div className="app-shell">
       <div className="flex">
         <Sidebar />
 
-        <main className="flex-1 p-6">
-          <section className="mx-auto max-w-7xl">
+        <main className="app-main">
+          <section className="app-frame">
             <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
               Security Reports
             </p>

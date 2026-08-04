@@ -1,6 +1,6 @@
 "use client";
 
-import { API_BASE_URL } from "@/config/api";
+import { apiFetch } from "@/lib/api";
 import { useRef, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import {
@@ -58,7 +58,7 @@ export default function FileScannerPage() {
     formData.append("file", selectedFile);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/scan-file`, {
+      const response = await apiFetch(`/scan-file`, {
         method: "POST",
         body: formData,
       });
@@ -105,12 +105,12 @@ export default function FileScannerPage() {
   const scriptPatterns = scanResult?.suspicious_script_patterns || [];
 
   return (
-    <div className="min-h-screen bg-[#050816] text-white">
+    <div className="app-shell">
       <div className="flex">
         <Sidebar />
 
-        <main className="flex-1 p-6">
-          <section className="mx-auto max-w-7xl">
+        <main className="app-main">
+          <section className="app-frame">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm uppercase tracking-[0.3em] text-orange-400">
@@ -272,7 +272,7 @@ export default function FileScannerPage() {
                       <InfoLine label="Status" value={scanResult.status || "Unknown"} />
                     </div>
 
-                    <div className="mt-4 rounded-lg border border-orange-500/10 bg-[#050816] p-3">
+                    <div className="mt-4 rounded-lg border border-orange-500/10 app-shell p-3">
                       <p className="text-xs text-gray-500">SHA256</p>
 
                       <p className="mt-1 break-all text-xs text-orange-200">

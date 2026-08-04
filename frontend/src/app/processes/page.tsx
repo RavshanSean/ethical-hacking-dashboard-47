@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api";
+import { useCallback, useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import { API_BASE_URL } from "@/config/api";
 import { Activity, Cpu, Database } from "lucide-react";
+import { useVisibilityPolling } from "@/lib/performance";
 
 type ProcessItem = {
   pid: number;
@@ -24,9 +25,9 @@ export default function ProcessesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  async function loadProcesses() {
+  const loadProcesses = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/processes`);
+      const response = await apiFetch(`/processes`);
 
       if (!response.ok) {
         throw new Error("Failed to load processes");
@@ -42,28 +43,19 @@ export default function ProcessesPage() {
     } finally {
       setLoading(false);
     }
-  }
-
-  useEffect(() => {
-    loadProcesses();
-
-    const interval = setInterval(() => {
-      loadProcesses();
-    }, 5000);
-
-    return () => clearInterval(interval);
   }, []);
 
+  useVisibilityPolling(loadProcesses, 8000);
   const processes = data?.processes || [];
   const isLive = !error && Boolean(data);
 
   return (
-    <div className="min-h-screen bg-[#020711] text-white">
+    <div className="app-shell">
       <div className="flex">
         <Sidebar />
 
-        <main className="flex-1 p-6">
-          <section className="mx-auto max-w-7xl">
+        <main className="app-main">
+          <section className="app-frame">
             <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
               Endpoint Activity
             </p>

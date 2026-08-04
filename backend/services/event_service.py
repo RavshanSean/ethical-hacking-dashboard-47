@@ -54,6 +54,11 @@ def create_event(
     
     # Broadcast live telemetry to connected dashboards
     try:
+        from utils.settings_service import get_app_settings
+
+        if not get_app_settings().get("websocket_enabled", True):
+            return event
+
         loop = asyncio.get_running_loop()
         loop.create_task(manager.broadcast(event))
 

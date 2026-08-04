@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  API_BASE_URL,
-  WS_BASE_URL,
-} from "@/config/api";
+import { apiFetch, authenticatedWsUrl } from "@/lib/api";
 import { useEffect, useState } from "react";
 import {
   Activity,
@@ -25,8 +22,7 @@ export default function LiveMonitor() {
 
   async function fetchEvents() {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/events`
+      const response = await apiFetch(`/events`
       );
 
       if (!response.ok) {
@@ -50,9 +46,7 @@ export default function LiveMonitor() {
   fetchEvents();
 
   // Create WebSocket connection
-  const websocket = new WebSocket(
-    `${WS_BASE_URL}/ws/events`
-  );
+  const websocket = new WebSocket(authenticatedWsUrl('/ws/events'));
 
   // Listen for incoming backend events
   websocket.onmessage = (event) => {

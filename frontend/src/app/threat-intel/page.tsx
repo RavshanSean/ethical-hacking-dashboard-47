@@ -1,8 +1,8 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import { API_BASE_URL } from "@/config/api";
 import { Activity, Database, ListChecks, ShieldAlert } from "lucide-react";
 
 type IOCItem = {
@@ -43,7 +43,7 @@ export default function ThreatIntelPage() {
     setError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/reports/security-summary`);
+      const response = await apiFetch(`/reports/security-summary`);
 
       if (!response.ok) {
         throw new Error("Failed to load ThreatIntel data");
@@ -68,12 +68,12 @@ export default function ThreatIntelPage() {
   const iocTypes = data?.ioc_types || [];
 
   return (
-    <div className="min-h-screen bg-[#050816] text-white">
+    <div className="app-shell">
       <div className="flex">
         <Sidebar />
 
-        <main className="flex-1 p-6">
-          <section className="mx-auto max-w-7xl">
+        <main className="app-main">
+          <section className="app-frame">
             <p className="text-sm uppercase tracking-[0.3em] text-cyan-400">
               RavShield Intelligence
             </p>

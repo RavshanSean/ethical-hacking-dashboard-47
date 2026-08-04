@@ -1,7 +1,8 @@
 "use client";
-import { API_BASE_URL } from "@/config/api";
 
+import { apiFetch } from "@/lib/api";
 import React, { useEffect, useState } from "react";
+import "leaflet/dist/leaflet.css";
 import {
   MapContainer,
   TileLayer,
@@ -66,7 +67,7 @@ export default function ThreatMapClient() {
   const [showIpMarker, setShowIpMarker] = useState(false);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/threat-map/events`)
+    apiFetch(`/threat-map/events`)
       .then((response) => response.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -85,7 +86,7 @@ export default function ThreatMapClient() {
     setShowIpMarker(false);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/ip-lookup/${ip}`)
+      const response = await apiFetch(`/ip-lookup/${ip}`)
       const data = await response.json();
 
       if (data.error || data.lat === null || data.lon === null) {

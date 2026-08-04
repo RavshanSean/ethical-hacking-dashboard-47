@@ -1,8 +1,8 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import { API_BASE_URL } from "@/config/api";
 import {
   AlertTriangle,
   Globe,
@@ -84,8 +84,7 @@ export default function BrowserProtectionPage() {
     setResult(null);
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/browser-protection/check`,
+      const response = await apiFetch(`/browser-protection/check`,
         {
           method: "POST",
           headers: {
@@ -131,12 +130,12 @@ export default function BrowserProtectionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#020711] text-white">
+    <div className="app-shell">
       <div className="flex">
         <Sidebar />
 
-        <main className="flex-1 p-6">
-          <section className="mx-auto max-w-7xl">
+        <main className="app-main">
+          <section className="app-frame">
             <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
               Browser Security
             </p>

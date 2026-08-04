@@ -1,8 +1,8 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import { API_BASE_URL } from "@/config/api";
 import {
   Cpu,
   HardDrive,
@@ -30,7 +30,7 @@ export default function SystemScanPage() {
     setResult(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/system/scan`);
+      const response = await apiFetch(`/system/scan`);
 
       if (!response.ok) {
         throw new Error("System scan failed");
@@ -63,12 +63,12 @@ export default function SystemScanPage() {
     result?.network_status?.toLowerCase() === "connected";
 
   return (
-    <div className="min-h-screen bg-[#020711] text-white">
+    <div className="app-shell">
       <div className="flex">
         <Sidebar />
 
-        <main className="flex-1 p-6">
-          <section className="mx-auto max-w-7xl">
+        <main className="app-main">
+          <section className="app-frame">
             <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
               Endpoint Diagnostics
             </p>

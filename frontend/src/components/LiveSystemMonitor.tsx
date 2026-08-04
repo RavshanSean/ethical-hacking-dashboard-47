@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { API_BASE_URL } from "@/config/api";
+import { apiFetch } from "@/lib/api";
+import { useCallback, useState } from "react";
+import { useVisibilityPolling } from "@/lib/performance";
 import { Cpu, HardDrive, MemoryStick, Wifi } from "lucide-react";
 
 type SystemMetrics = {
@@ -15,9 +16,9 @@ export default function LiveSystemMonitor() {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [error, setError] = useState("");
 
-  async function loadMetrics() {
+  const loadMetrics = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/system/scan`);
+      const response = await apiFetch(`/system/scan`);
 
       if (!response.ok) {
         throw new Error("Failed to load system metrics");
@@ -31,17 +32,9 @@ export default function LiveSystemMonitor() {
       console.error("Failed to load system metrics:", error);
       setError("System metrics are currently unavailable.");
     }
-  }
-
-  useEffect(() => {
-    loadMetrics();
-
-    const interval = setInterval(() => {
-      loadMetrics();
-    }, 5000);
-
-    return () => clearInterval(interval);
   }, []);
+
+  useVisibilityPolling(loadMetrics, 8000);
 
   const cards = [
     {

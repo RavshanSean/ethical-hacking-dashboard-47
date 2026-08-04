@@ -1,10 +1,9 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { Bell, LogOut, Search, ShieldCheck, UserCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { API_BASE_URL } from "@/config/api";
-
 type StoredUser = {
   username: string;
   email: string;
@@ -58,7 +57,7 @@ export default function DashboardHeader() {
   useEffect(() => {
     async function loadAlerts() {
       try {
-        const response = await fetch(`${API_BASE_URL}/threat-map/events`);
+        const response = await apiFetch(`/threat-map/events`);
         const data = await response.json();
 
         if (Array.isArray(data)) {
@@ -86,8 +85,7 @@ export default function DashboardHeader() {
       }
 
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/search?q=${encodeURIComponent(searchQuery)}`
+        const response = await apiFetch(`/search?q=${encodeURIComponent(searchQuery)}`
         );
 
         const data = await response.json();

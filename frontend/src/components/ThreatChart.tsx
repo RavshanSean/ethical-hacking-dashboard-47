@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { API_BASE_URL } from "@/config/api";
+import { useSharedStats } from "@/lib/performance";
 import {
   PieChart,
   Pie,
@@ -10,50 +9,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-type StatsData = {
-  total_events: number;
-  high_threats: number;
-  medium_threats: number;
-  low_threats: number;
-};
-
 export default function ThreatChart() {
-
-  const [stats, setStats] = useState<StatsData>({
-    total_events: 0,
-    high_threats: 0,
-    medium_threats: 0,
-    low_threats: 0,
-  });
-
-  async function loadStats() {
-
-    try {
- 
-      const response = await fetch(`${API_BASE_URL}/stats`)
-
-      const data = await response.json();
-
-      setStats(data);
-
-    } catch (error) {
-
-      console.error("Failed to load chart stats:", error);
-    }
-  }
-
-  useEffect(() => {
-
-    loadStats();
-
-    const interval = setInterval(() => {
-      loadStats();
-    }, 5000);
-
-    return () => clearInterval(interval);
-
-  }, []);
-
+  const stats = useSharedStats(8000);
   const chartData = [
     {
       name: "HIGH",

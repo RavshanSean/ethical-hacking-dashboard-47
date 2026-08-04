@@ -1,8 +1,8 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import { API_BASE_URL } from "@/config/api";
 import { Bot, Send, UserCircle, Volume2 } from "lucide-react";
 
 type Message = { role: "user" | "ai"; text: string };
@@ -28,7 +28,7 @@ export default function AICopilotPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/ai-copilot/ask`, {
+      const response = await apiFetch(`/ai-copilot/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: cleanQuestion }),
@@ -74,7 +74,7 @@ export default function AICopilotPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#020711] text-white">
+    <div className="app-shell">
       <div className="flex">
         <Sidebar />
         <main className="flex-1 p-4 sm:p-6">

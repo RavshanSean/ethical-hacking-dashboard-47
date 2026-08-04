@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr
+from starlette.concurrency import run_in_threadpool
 
 from db.database import SessionLocal
 from db.models import User
@@ -7,7 +8,9 @@ from utils.auth_utils import (
     hash_password,
     verify_password,
     create_access_token,
+    password_context,
 )
+from utils.rate_limit import auth_rate_limiter, client_key
 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -25,95 +28,118 @@ class LoginRequest(BaseModel):
 
 
 @router.post("/register")
-def register_user(payload: RegisterRequest):
-    db = SessionLocal()
+async def register_user(payload: RegisterRequest, request: Request):
+    auth_rate_limiter.check(client_key(request, "auth"))
 
-    existing_user = (
-        db.query(User)
-        .filter(
-            (User.username == payload.username)
-            | (User.email == payload.email)
-        )
-        .first()
-    )
-
-    if existing_user:
-        db.close()
+    if len(payload.password) < 8:
         raise HTTPException(
             status_code=400,
-            detail="Username or email already exists",
+            detail="Password must be at least 8 characters",
         )
 
-    new_user = User(
-        username=payload.username,
-        email=payload.email,
-        hashed_password=hash_password(payload.password),
-    )
+    db = SessionLocal()
 
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    try:
+        existing_user = await run_in_threadpool(
+            lambda: db.query(User)
+            .filter(
+                (User.username == payload.username)
+                | (User.email == payload.email)
+            )
+            .first()
+        )
 
-    token = create_access_token(
-        {"sub": new_user.username}
-    )
+        if existing_user:
+            raise HTTPException(
+                status_code=400,
+                detail="Username or email already exists",
+            )
 
-    db.close()
+        hashed = await run_in_threadpool(hash_password, payload.password)
 
-    return {
-        "message": "User registered successfully",
-        "access_token": token,
-        "token_type": "bearer",
-        "user": {
-            "id": new_user.id,
-            "username": new_user.username,
-            "email": new_user.email,
-        },
-    }
+        new_user = User(
+            username=payload.username,
+            email=payload.email,
+            hashed_password=hashed,
+        )
+
+        def _persist_user():
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
+            return new_user
+
+        new_user = await run_in_threadpool(_persist_user)
+        token = create_access_token({"sub": new_user.username})
+
+        return {
+            "message": "User registered successfully",
+            "access_token": token,
+            "token_type": "bearer",
+            "user": {
+                "id": new_user.id,
+                "username": new_user.username,
+                "email": new_user.email,
+            },
+        }
+    finally:
+        db.close()
 
 
 @router.post("/login")
-def login_user(payload: LoginRequest):
+async def login_user(payload: LoginRequest, request: Request):
+    auth_rate_limiter.check(client_key(request, "auth"))
+
     db = SessionLocal()
 
-    user = (
-        db.query(User)
-        .filter(User.username == payload.username)
-        .first()
-    )
-
-    if not user:
-        db.close()
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid username or password",
+    try:
+        user = await run_in_threadpool(
+            lambda: db.query(User)
+            .filter(User.username == payload.username)
+            .first()
         )
 
-    password_is_valid = verify_password(
-        payload.password,
-        user.hashed_password,
-    )
+        if not user:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid username or password",
+            )
 
-    if not password_is_valid:
-        db.close()
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid username or password",
+        password_is_valid = await run_in_threadpool(
+            verify_password,
+            payload.password,
+            user.hashed_password,
         )
 
-    token = create_access_token(
-        {"sub": user.username}
-    )
+        if not password_is_valid:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid username or password",
+            )
 
-    db.close()
+        if password_context.needs_update(user.hashed_password):
+            upgraded_hash = await run_in_threadpool(
+                hash_password,
+                payload.password,
+            )
 
-    return {
-        "message": "Login successful",
-        "access_token": token,
-        "token_type": "bearer",
-        "user": {
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-        },
-    }
+            def _persist_upgraded_hash():
+                user.hashed_password = upgraded_hash
+                db.commit()
+
+            await run_in_threadpool(_persist_upgraded_hash)
+
+        token = create_access_token({"sub": user.username})
+
+        return {
+            "message": "Login successful",
+            "access_token": token,
+            "token_type": "bearer",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+            },
+        }
+    finally:
+        db.close()
