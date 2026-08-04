@@ -1,7 +1,6 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
-import { useEffect, useState } from "react";
+import { useSharedStats } from "@/lib/performance";
 import {
   ShieldCheck,
   Bug,
@@ -20,45 +19,11 @@ type StatsCardsProps = {
   lastDomain?: string;
 };
 
-type BackendStats = {
-  total_events: number;
-  high_threats: number;
-  medium_threats: number;
-  low_threats: number;
-};
-
 type Accent = "emerald" | "red" | "cyan" | "violet";
 type Sparkline = "green" | "red" | "cyan" | "violet";
 
 export default function StatsCards({ lastDomain }: StatsCardsProps) {
-  const [stats, setStats] = useState<BackendStats>({
-    total_events: 0,
-    high_threats: 0,
-    medium_threats: 0,
-    low_threats: 0,
-  });
-
-  async function loadStats() {
-    try {
-      const response = await apiFetch(`/stats`);
-      const data = await response.json();
-
-      setStats(data);
-    } catch (error) {
-      console.error("Failed to load stats:", error);
-    }
-  }
-
-  useEffect(() => {
-    loadStats();
-
-    const interval = setInterval(() => {
-      loadStats();
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
+  const stats = useSharedStats(8000);
   const protectionStatus =
     stats.high_threats > 0
       ? "Critical"

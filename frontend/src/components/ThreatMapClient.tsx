@@ -2,6 +2,7 @@
 
 import { apiFetch } from "@/lib/api";
 import React, { useEffect, useState } from "react";
+import "leaflet/dist/leaflet.css";
 import {
   MapContainer,
   TileLayer,

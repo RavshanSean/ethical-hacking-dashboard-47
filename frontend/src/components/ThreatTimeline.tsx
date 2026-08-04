@@ -1,7 +1,8 @@
 "use client";
 
 import { apiFetch } from "@/lib/api";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useVisibilityPolling } from "@/lib/performance";
 import {
   LineChart,
   Line,
@@ -23,30 +24,17 @@ type TimelinePoint = {
 export default function ThreatTimeline() {
   const [timeline, setTimeline] = useState<TimelinePoint[]>([]);
 
-  async function loadTimeline() {
+  const loadTimeline = useCallback(async () => {
     try {
-      
-      const response = await apiFetch(`/stats/timeline`
-       );
-
+      const response = await apiFetch(`/stats/timeline`);
       const data = await response.json();
-
       setTimeline(data.timeline || []);
     } catch (error) {
       console.error("Failed to load timeline:", error);
     }
-  }
-
-  useEffect(() => {
-    loadTimeline();
-
-    const interval = setInterval(() => {
-      loadTimeline();
-    }, 5000);
-
-    return () => clearInterval(interval);
   }, []);
 
+  useVisibilityPolling(loadTimeline, 8000);
   return (
     <div className="rounded-2xl border border-cyan-500/20 bg-[#0b1220] p-6">
       <div className="mb-6 flex items-center justify-between">

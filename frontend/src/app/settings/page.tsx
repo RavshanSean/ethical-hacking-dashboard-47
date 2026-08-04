@@ -83,10 +83,10 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050816] text-white">
+    <div className="app-shell">
       <div className="flex">
         <Sidebar />
-        <main className="flex-1 p-6">
+        <main className="app-main">
           <section className="mx-auto max-w-6xl">
             <p className="text-sm uppercase tracking-[0.3em] text-cyan-400">System Control</p>
 

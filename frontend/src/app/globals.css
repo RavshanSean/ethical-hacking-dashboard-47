@@ -1,26 +1,183 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #05070d;
+  --bg-elevated: #0a0f1a;
+  --bg-panel: rgba(10, 16, 28, 0.82);
+  --fg: #f3f1ec;
+  --muted: rgba(243, 241, 236, 0.55);
+  --line: rgba(243, 241, 236, 0.08);
+  --accent: #c4a574;
+  --accent-strong: #e2c48a;
+  --signal: #7ec8c4;
+  --danger: #e07868;
+  --ok: #8fbf9f;
+  --font-display: var(--font-display);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-mono);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body), system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: white;
+}
+
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+}
+
+.font-body {
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+.font-mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 600px at 12% -10%, rgba(196, 165, 116, 0.08), transparent 55%),
+    radial-gradient(900px 500px at 90% 0%, rgba(126, 200, 196, 0.07), transparent 50%),
+    linear-gradient(180deg, #070b14 0%, #05070d 45%, #04060b 100%);
+  color: var(--fg);
+}
+
+.app-main {
+  flex: 1;
+  padding: 1.75rem;
+}
+
+.app-frame {
+  margin-inline: auto;
+  max-width: 80rem;
+}
+
+.lux-card {
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  background: var(--bg-panel);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(16px);
+}
+
+.lux-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent) 85%, white);
+}
+
+.lux-title {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+}
+
+.auth-atmosphere {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 100vh;
+  background: #05070d;
+  color: var(--fg);
+}
+
+.auth-atmosphere::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  z-index: -2;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(196, 165, 116, 0.18), transparent 34%),
+    radial-gradient(circle at 80% 10%, rgba(126, 200, 196, 0.12), transparent 30%),
+    radial-gradient(circle at 70% 80%, rgba(224, 120, 104, 0.08), transparent 28%),
+    linear-gradient(145deg, #070b14, #05070d 45%, #081018);
+  animation: authDrift 18s ease-in-out infinite alternate;
+}
+
+.auth-atmosphere::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(circle at center, black 35%, transparent 78%);
+  opacity: 0.45;
+}
+
+@keyframes authDrift {
+  from {
+    transform: translate3d(-1.5%, -1%, 0) scale(1.02);
+  }
+  to {
+    transform: translate3d(1.5%, 1.5%, 0) scale(1.06);
+  }
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes softPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.animate-rise {
+  animation: riseIn 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-rise-delay {
+  animation: riseIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+}
+
+.animate-rise-delay-2 {
+  animation: riseIn 1s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both;
+}
+
+.auth-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(40px);
+  animation: softPulse 6s ease-in-out infinite;
+  pointer-events: none;
 }

@@ -134,12 +134,12 @@ export default function UrlScannerPage() {
         };
 
   return (
-    <div className="min-h-screen bg-[#050816] text-white">
+    <div className="app-shell">
       <div className="flex">
         <Sidebar />
 
-        <main className="flex-1 p-6">
-          <section className="mx-auto max-w-7xl">
+        <main className="app-main">
+          <section className="app-frame">
             <div>
               <p className="text-sm uppercase tracking-[0.3em] text-green-400">
                 Investigation Workspace

@@ -1,7 +1,8 @@
 "use client";
 
 import { apiFetch } from "@/lib/api";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useVisibilityPolling } from "@/lib/performance";
 
 type Threat = {
   id: number;
@@ -14,35 +15,20 @@ type Threat = {
 export default function RecentThreats() {
   const [threats, setThreats] = useState<Threat[]>([]);
 
-  async function loadThreats() {
+  const loadThreats = useCallback(async () => {
     try {
-      const response = await apiFetch(`/stats/recent-threats`
-      );
-
+      const response = await apiFetch(`/stats/recent-threats`);
       const data = await response.json();
-
       setThreats(data.threats || []);
     } catch (error) {
-      console.error(
-        "Failed to load recent threats:",
-        error
-      );
+      console.error("Failed to load recent threats:", error);
     }
-  }
-
-  useEffect(() => {
-    loadThreats();
-
-    const interval = setInterval(() => {
-      loadThreats();
-    }, 5000);
-
-    return () => clearInterval(interval);
   }, []);
 
+  useVisibilityPolling(loadThreats, 8000);
   return (
-    <div className="rounded-2xl border border-cyan-400/10 bg-[#07111f]/90 p-5">
-      <h3 className="text-lg font-semibold text-white">
+    <div className="lux-card p-5">
+      <h3 className="lux-title text-lg">
         Recent Threats
       </h3>
 

@@ -1,85 +1,110 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import StatsCards from "../components/StatsCards";
-import DashboardHeader from "../components/DashboardHeader";
-import Sidebar from "../components/Sidebar";
-import ThreatChart from "../components/ThreatChart";
-import ThreatTimeline from "../components/ThreatTimeline";
-import RecentThreats from "@/components/RecentThreats";
+import Sidebar from "@/components/Sidebar";
+import DashboardHeader from "@/components/DashboardHeader";
+import StatsCards from "@/components/StatsCards";
 import QuickScanPanel from "@/components/QuickScanPanel";
-import LiveSystemMonitor from "@/components/LiveSystemMonitor";
-import AIAnalysisPanel from "@/components/AIAnalysisPanel";
+import { AuthSplash, PanelSkeleton } from "@/components/PanelSkeleton";
 
-type ScanHistoryItem = {
-  domain: string;
-  threat: string;
-  time: string;
-};
+const ThreatTimeline = dynamic(() => import("@/components/ThreatTimeline"), {
+  loading: () => <PanelSkeleton className="h-80" />,
+  ssr: false,
+});
+
+const RecentThreats = dynamic(() => import("@/components/RecentThreats"), {
+  loading: () => <PanelSkeleton className="h-80" />,
+  ssr: false,
+});
+
+const LiveSystemMonitor = dynamic(
+  () => import("@/components/LiveSystemMonitor"),
+  {
+    loading: () => <PanelSkeleton className="h-64" />,
+    ssr: false,
+  }
+);
+
+const ThreatChart = dynamic(() => import("@/components/ThreatChart"), {
+  loading: () => <PanelSkeleton className="h-72" />,
+  ssr: false,
+});
+
+const AIAnalysisPanel = dynamic(() => import("@/components/AIAnalysisPanel"), {
+  loading: () => <PanelSkeleton className="h-72" />,
+  ssr: false,
+});
 
 export default function Home() {
   const router = useRouter();
-
-  const [loading, setLoading] = useState(true);
+  const [ready, setReady] = useState(false);
+  const [showHeavy, setShowHeavy] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-
     if (!token) {
-      router.push("/login");
+      router.replace("/login");
       return;
     }
+    setReady(true);
 
-    setLoading(false);
+    if (typeof window.requestIdleCallback === "function") {
+      const idleId = window.requestIdleCallback(() => setShowHeavy(true), {
+        timeout: 900,
+      });
+      return () => window.cancelIdleCallback(idleId);
+    }
+
+    const timeoutId = setTimeout(() => setShowHeavy(true), 250);
+    return () => clearTimeout(timeoutId);
   }, [router]);
 
-  const scanHistory: ScanHistoryItem[] = [];
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#050816] flex items-center justify-center text-white">
-        Checking authentication...
-      </div>
-    );
-  }
+  if (!ready) return <AuthSplash />;
 
   return (
-    <div className="min-h-screen bg-[#050816] text-white">
+    <div className="app-shell">
       <div className="flex">
         <Sidebar />
 
-        <main className="flex-1 p-6">
-          <section id="dashboard" className="mx-auto max-w-7xl">
+        <main className="app-main">
+          <section id="dashboard" className="app-frame animate-rise">
             <DashboardHeader />
 
-            <div className="mt-6">
-              <StatsCards scanHistory={scanHistory} />
+            <div className="mt-7">
+              <StatsCards scanHistory={[]} />
             </div>
 
             <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
               <div className="xl:col-span-2">
-                <ThreatTimeline />
+                {showHeavy ? <ThreatTimeline /> : <PanelSkeleton className="h-80" />}
               </div>
-
-              <RecentThreats />
+              {showHeavy ? <RecentThreats /> : <PanelSkeleton className="h-80" />}
             </div>
 
             <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
               <QuickScanPanel />
-              <LiveSystemMonitor />
+              {showHeavy ? (
+                <LiveSystemMonitor />
+              ) : (
+                <PanelSkeleton className="h-64" />
+              )}
             </div>
 
             <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
               <div className="xl:col-span-2">
-                <AIAnalysisPanel />
+                {showHeavy ? (
+                  <AIAnalysisPanel />
+                ) : (
+                  <PanelSkeleton className="h-72" />
+                )}
               </div>
-
-              <ThreatChart />
+              {showHeavy ? <ThreatChart /> : <PanelSkeleton className="h-72" />}
             </div>
           </section>
         </main>
       </div>
     </div>
   );
-  }
+}

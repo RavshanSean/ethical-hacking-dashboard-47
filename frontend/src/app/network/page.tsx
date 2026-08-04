@@ -1,7 +1,7 @@
 "use client";
 
 import { apiFetch } from "@/lib/api";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import {
   Activity,
@@ -12,6 +12,7 @@ import {
   Radar,
   ShieldAlert,
 } from "lucide-react";
+import { useVisibilityPolling } from "@/lib/performance";
 
 type Connection = {
   local_address?: string;
@@ -70,7 +71,7 @@ export default function NetworkPage() {
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
   const [discoveryError, setDiscoveryError] = useState("");
 
-  async function loadNetwork() {
+  const loadNetwork = useCallback(async () => {
     try {
       const response = await apiFetch(`/network`);
 
@@ -86,7 +87,7 @@ export default function NetworkPage() {
       console.error("Failed to load network data:", error);
       setNetworkError("Network telemetry is currently unavailable.");
     }
-  }
+  }, []);
 
   async function runDiscovery() {
     setDiscoveryLoading(true);
@@ -111,27 +112,18 @@ export default function NetworkPage() {
     }
   }
 
-  useEffect(() => {
-    loadNetwork();
-
-    const interval = setInterval(() => {
-      loadNetwork();
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
+  useVisibilityPolling(loadNetwork, 8000);
   const connections = data?.connections || [];
   const detectedHosts = discovery?.detected_hosts || [];
   const telemetryLive = !networkError && Boolean(data);
 
   return (
-    <div className="min-h-screen bg-[#020711] text-white">
+    <div className="app-shell">
       <div className="flex">
         <Sidebar />
 
-        <main className="flex-1 p-6">
-          <section className="mx-auto max-w-7xl">
+        <main className="app-main">
+          <section className="app-frame">
             <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
               Network Telemetry
             </p>

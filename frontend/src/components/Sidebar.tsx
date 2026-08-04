@@ -36,8 +36,6 @@ const navGroups = [
       { label: "System Scan", href: "/system-scan", icon: Monitor },
       { label: "Vulnerability Scan", href: "/vulnerability-scan", icon: Bug },
       { label: "Browser Protection", href: "/browser-protection", icon: Lock },
-      
-      
     ],
   },
   {
@@ -50,10 +48,9 @@ const navGroups = [
       { label: "Logs", href: "/logs", icon: ScrollText },
       { label: "Analytics", href: "/analytics", icon: BarChart3 },
       { label: "Reports", href: "/reports", icon: FileText },
-      
     ],
   },
-    {
+  {
     title: "Tools",
     items: [
       { label: "IP & Threat Map", href: "/threat-map", icon: Globe },
@@ -63,6 +60,7 @@ const navGroups = [
     ],
   },
 ];
+
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -75,7 +73,6 @@ export default function Sidebar() {
     }
 
     const savedScroll = sessionStorage.getItem("sidebar-scroll");
-
     if (sidebarRef.current && savedScroll) {
       sidebarRef.current.scrollTop = Number(savedScroll);
     }
@@ -83,7 +80,6 @@ export default function Sidebar() {
 
   function saveSidebarScroll() {
     if (!sidebarRef.current) return;
-
     sessionStorage.setItem(
       "sidebar-scroll",
       String(sidebarRef.current.scrollTop)
@@ -91,22 +87,20 @@ export default function Sidebar() {
   }
 
   return (
-    <aside ref={sidebarRef} className="sticky top-0 h-screen w-64 shrink-0 overflow-y-auto border-r border-cyan-400/10 bg-[#020711] px-5 py-7">
+    <aside
+      ref={sidebarRef}
+      className="sticky top-0 h-screen w-[17rem] shrink-0 overflow-y-auto border-r border-[var(--line)] bg-[rgba(5,8,14,0.92)] px-5 py-7 backdrop-blur-xl"
+    >
       <div>
-        <p className="text-xs uppercase tracking-[0.42em] text-cyan-300">
-          Security Core
-        </p>
-
-        <h1 className="mt-4 text-3xl font-bold tracking-tight text-white">
-          EHD #47
-        </h1>
+        <p className="lux-label">Security Core</p>
+        <h1 className="lux-title mt-4 text-3xl text-[var(--fg)]">EHD #47</h1>
       </div>
 
       <nav className="mt-10 space-y-8">
         {navGroups.map((group) => (
           <div key={group.title || "main"}>
             {group.title && (
-              <p className="mb-3 px-4 text-xs uppercase tracking-[0.28em] text-slate-600">
+              <p className="mb-3 px-4 text-[0.65rem] uppercase tracking-[0.28em] text-white/30">
                 {group.title}
               </p>
             )}
@@ -118,32 +112,33 @@ export default function Sidebar() {
 
                 return (
                   <Link
-                      key={item.label}
-                      href={item.href}
-                      onClick={(event) => {
-                        if (item.href === "#") {
-                          event.preventDefault();
-                          return;
-                        }
-
-                        saveSidebarScroll();
-                      }}
-                    className={`group flex items-center gap-4 rounded-xl border px-4 py-3 transition ${
+                    key={item.label}
+                    href={item.href}
+                    prefetch
+                    onClick={(event) => {
+                      if (item.href === "#") {
+                        event.preventDefault();
+                        return;
+                      }
+                      saveSidebarScroll();
+                    }}
+                    className={`group flex items-center gap-4 rounded-xl border px-4 py-3 transition duration-300 ${
                       active
-                        ? "border-cyan-400/20 bg-cyan-400/10 text-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.08)]"
-                        : "border-transparent text-slate-400 hover:border-cyan-400/10 hover:bg-white/[0.03] hover:text-cyan-200"
+                        ? "border-[var(--accent)]/25 bg-[var(--accent)]/10 text-[var(--accent-strong)]"
+                        : "border-transparent text-white/45 hover:border-white/8 hover:bg-white/[0.03] hover:text-white/85"
                     }`}
                   >
                     <Icon
-                      size={18}
+                      size={17}
                       className={
                         active
-                          ? "text-cyan-300"
-                          : "text-slate-500 group-hover:text-cyan-300"
+                          ? "text-[var(--accent-strong)]"
+                          : "text-white/35 group-hover:text-[var(--accent-strong)]"
                       }
                     />
-
-                    <span className="text-sm font-medium">{item.label}</span>
+                    <span className="text-sm font-medium tracking-wide">
+                      {item.label}
+                    </span>
                   </Link>
                 );
               })}
@@ -152,14 +147,13 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="mt-10 rounded-2xl border border-cyan-400/10 bg-black/45 p-4 shadow-[0_0_28px_rgba(0,255,220,0.04)]">
-        <p className="text-xs uppercase tracking-[0.25em] text-slate-500">
+      <div className="mt-10 rounded-2xl border border-[var(--line)] bg-black/35 p-4">
+        <p className="text-[0.65rem] uppercase tracking-[0.25em] text-white/30">
           System Status
         </p>
-
         <div className="mt-4 flex items-center gap-2">
-          <div className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_14px_rgba(52,211,153,0.8)]" />
-          <p className="text-sm font-semibold text-emerald-400">Operational</p>
+          <div className="h-2.5 w-2.5 rounded-full bg-[var(--ok)] shadow-[0_0_14px_rgba(143,191,159,0.7)]" />
+          <p className="text-sm font-semibold text-[var(--ok)]">Operational</p>
         </div>
       </div>
     </aside>
