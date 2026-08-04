@@ -1,8 +1,8 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import { API_BASE_URL } from "@/config/api";
 import { ShieldAlert, Skull, Archive, LoaderCircle } from "lucide-react";
 
 type QuarantineItem = {
@@ -26,7 +26,7 @@ export default function QuarantinePage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/quarantine`);
+      const response = await apiFetch(`/quarantine`);
 
       if (!response.ok) {
         throw new Error("Failed to load quarantine records");
@@ -55,7 +55,7 @@ export default function QuarantinePage() {
     setError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/quarantine/${id}`, {
+      const response = await apiFetch(`/quarantine/${id}`, {
         method: "DELETE",
       });
 

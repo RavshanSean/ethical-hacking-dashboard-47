@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
 from routes.vulnerability_routes import (
@@ -6,6 +6,8 @@ from routes.vulnerability_routes import (
     VulnerabilityScanRequest,
 )
 from services.scanner_service import scan_website
+from utils.rate_limit import scan_rate_limiter, client_key
+from utils.ssrf import validate_scan_url
 
 router = APIRouter(prefix="/browser-protection", tags=["Browser Protection"])
 
@@ -15,12 +17,18 @@ class BrowserProtectionRequest(BaseModel):
 
 
 @router.post("/check")
-def check_browser_protection(payload: BrowserProtectionRequest):
+def check_browser_protection(
+    payload: BrowserProtectionRequest,
+    request: Request,
+):
+    scan_rate_limiter.check(client_key(request, "scan"))
+    safe_url = validate_scan_url(payload.url)
+
     vulnerability_result = vulnerability_scan(
-        VulnerabilityScanRequest(url=payload.url)
+        VulnerabilityScanRequest(url=safe_url)
     )
 
-    url_result = scan_website(payload.url)
+    url_result = scan_website(safe_url)
 
     vulnerability_score = vulnerability_result.get("score", 0)
     url_risk_score = url_result.get("risk_score", 0)

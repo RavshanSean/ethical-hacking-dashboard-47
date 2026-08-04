@@ -1,7 +1,7 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
-import { API_BASE_URL } from "@/config/api";
 import { Cpu, HardDrive, MemoryStick, Wifi } from "lucide-react";
 
 type SystemMetrics = {
@@ -17,7 +17,7 @@ export default function LiveSystemMonitor() {
 
   async function loadMetrics() {
     try {
-      const response = await fetch(`${API_BASE_URL}/system/scan`);
+      const response = await apiFetch(`/system/scan`);
 
       if (!response.ok) {
         throw new Error("Failed to load system metrics");

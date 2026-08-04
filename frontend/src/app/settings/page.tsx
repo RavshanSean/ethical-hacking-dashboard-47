@@ -1,8 +1,8 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import { API_BASE_URL } from "@/config/api";
 import { Brain, FileArchive, Radio, Save, Shield } from "lucide-react";
 
 type AppSettings = {
@@ -33,7 +33,7 @@ export default function SettingsPage() {
     setLoadError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/settings`);
+      const response = await apiFetch(`/settings`);
       if (!response.ok) throw new Error("Failed to load settings");
       const data = await response.json();
       setSettings(data);
@@ -64,7 +64,7 @@ export default function SettingsPage() {
     setSaveStatus("Saving...");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/settings`, {
+      const response = await apiFetch(`/settings`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings),

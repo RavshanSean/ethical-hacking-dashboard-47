@@ -1,6 +1,6 @@
 "use client";
 
-import { API_BASE_URL } from "@/config/api";
+import { apiFetch } from "@/lib/api";
 import { useCallback, useEffect, useState } from "react";
 
 type ThreatFilter = "ALL" | "HIGH" | "MEDIUM" | "LOW";
@@ -46,10 +46,10 @@ export default function RecentScans() {
     try {
       const endpoint =
         threatFilter === "ALL"
-          ? `${API_BASE_URL}/scan-results?page=${page}&limit=5`
-          : `${API_BASE_URL}/scan-results?page=${page}&limit=5&threat_level=${threatFilter}`;
+          ? `/scan-results?page=${page}&limit=5`
+          : `/scan-results?page=${page}&limit=5&threat_level=${threatFilter}`;
 
-      const response = await fetch(endpoint);
+      const response = await apiFetch(endpoint);
       const data = await response.json();
 
       setScans(data.items || []);
@@ -62,8 +62,7 @@ export default function RecentScans() {
 
   async function loadScanDetails(scanId: number) {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/scan-results/${scanId}`
+      const response = await apiFetch(`/scan-results/${scanId}`
       );
       const data = await response.json();
 

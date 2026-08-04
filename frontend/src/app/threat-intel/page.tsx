@@ -1,8 +1,8 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import { API_BASE_URL } from "@/config/api";
 import { Activity, Database, ListChecks, ShieldAlert } from "lucide-react";
 
 type IOCItem = {
@@ -43,7 +43,7 @@ export default function ThreatIntelPage() {
     setError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/reports/security-summary`);
+      const response = await apiFetch(`/reports/security-summary`);
 
       if (!response.ok) {
         throw new Error("Failed to load ThreatIntel data");

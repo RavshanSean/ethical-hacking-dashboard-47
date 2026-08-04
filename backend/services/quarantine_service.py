@@ -34,6 +34,16 @@ def quarantine_file(filename: str, file_bytes: bytes, scan_result: dict):
     with open(file_path, "wb") as file:
         file.write(file_bytes)
 
+    try:
+        os.chmod(file_path, 0o600)
+    except OSError:
+        pass
+
+    try:
+        os.chmod(QUARANTINE_DIR, 0o700)
+    except OSError:
+        pass
+
     item = {
         "id": quarantine_id,
         "original_filename": filename,

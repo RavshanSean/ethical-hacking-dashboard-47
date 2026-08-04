@@ -329,7 +329,13 @@ def scan_with_clamav(filename: str, file_bytes: bytes):
             "raw_output": str(error),
         }
 
-def analyze_file(filename: str, file_bytes: bytes):
+def analyze_file(
+    filename: str,
+    file_bytes: bytes,
+    max_archive_depth: int = MAX_RECURSION_DEPTH,
+    zip_inspection: bool = True,
+    ai_analysis: bool = True,
+):
     lower_name = filename.lower()
     risk_score = 0
     reasons = []
@@ -356,7 +362,14 @@ def analyze_file(filename: str, file_bytes: bytes):
     detected_file_type = detect_file_signature(file_bytes)
     entropy = calculate_entropy(file_bytes)
     script_matches = detect_script_patterns(file_bytes)
-    zip_findings = inspect_zip_contents(file_bytes)
+    zip_findings = (
+        inspect_zip_contents(
+            file_bytes,
+            max_depth=max(1, int(max_archive_depth)),
+        )
+        if zip_inspection
+        else []
+    )
     clamav_result = scan_with_clamav(filename, file_bytes)
     
     if hash_reputation["status"] == "KNOWN_MALICIOUS":
@@ -476,14 +489,24 @@ def analyze_file(filename: str, file_bytes: bytes):
         "status": "File scan complete",
     }
 
-    scan_result["ai_summary"] = generate_file_ai_summary(scan_result)
+    scan_result["ai_summary"] = (
+        generate_file_ai_summary(scan_result)
+        if ai_analysis
+        else "AI analysis is disabled in settings."
+    )
     
-    if threat_level == "HIGH":
+    # Only auto-learn from confirmed AV / hash / IOC hits.
+    confirmed_malicious = (
+        clamav_result.get("status") == "INFECTED"
+        or hash_reputation.get("status") == "KNOWN_MALICIOUS"
+        or hash_ioc.get("matched")
+    )
+    if confirmed_malicious:
         auto_learn_ioc(
             "SHA256",
             sha256_hash,
             "HIGH",
-            "Automatically learned from a HIGH risk file scan.",
+            "Confirmed malicious via AV, hash reputation, or IOC match.",
         )
 
     return scan_result

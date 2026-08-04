@@ -1,5 +1,6 @@
 "use client";
-import { API_BASE_URL } from "@/config/api";
+
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import {
   LineChart,
@@ -25,8 +26,7 @@ export default function ThreatTimeline() {
   async function loadTimeline() {
     try {
       
-      const response = await fetch(
-        `${API_BASE_URL}/stats/timeline`
+      const response = await apiFetch(`/stats/timeline`
        );
 
       const data = await response.json();

@@ -1,6 +1,6 @@
 "use client";
 
-import { API_BASE_URL } from "@/config/api";
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import {
   ShieldCheck,
@@ -40,7 +40,7 @@ export default function StatsCards({ lastDomain }: StatsCardsProps) {
 
   async function loadStats() {
     try {
-      const response = await fetch(`${API_BASE_URL}/stats`);
+      const response = await apiFetch(`/stats`);
       const data = await response.json();
 
       setStats(data);
