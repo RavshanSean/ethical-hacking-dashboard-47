@@ -1,8 +1,8 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import { API_BASE_URL } from "@/config/api";
 import {
   Cpu,
   HardDrive,
@@ -30,7 +30,7 @@ export default function SystemScanPage() {
     setResult(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/system/scan`);
+      const response = await apiFetch(`/system/scan`);
 
       if (!response.ok) {
         throw new Error("System scan failed");

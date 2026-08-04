@@ -1,9 +1,9 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import dynamic from "next/dynamic";
-import { API_BASE_URL } from "@/config/api";
 import {
   Activity,
   Globe,
@@ -50,8 +50,8 @@ export default function ThreatMapPage() {
 
     try {
       const [summaryResponse, unmappedResponse] = await Promise.all([
-        fetch(`${API_BASE_URL}/threat-map/summary`),
-        fetch(`${API_BASE_URL}/threat-map/unmapped-events`),
+        apiFetch(`/threat-map/summary`),
+        apiFetch(`/threat-map/unmapped-events`),
       ]);
 
       if (!summaryResponse.ok || !unmappedResponse.ok) {

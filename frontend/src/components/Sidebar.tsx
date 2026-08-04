@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { Bot } from "lucide-react";
 import {
@@ -21,6 +21,7 @@ import {
   FileText,
   Database,
 } from "lucide-react";
+import { getToken } from "@/lib/auth";
 
 const navGroups = [
   {
@@ -64,15 +65,21 @@ const navGroups = [
 ];
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const sidebarRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
+    if (!getToken()) {
+      router.replace("/login");
+      return;
+    }
+
     const savedScroll = sessionStorage.getItem("sidebar-scroll");
 
     if (sidebarRef.current && savedScroll) {
       sidebarRef.current.scrollTop = Number(savedScroll);
     }
-  }, []);
+  }, [router]);
 
   function saveSidebarScroll() {
     if (!sidebarRef.current) return;

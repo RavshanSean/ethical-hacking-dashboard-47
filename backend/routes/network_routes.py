@@ -1,9 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 import ipaddress
 import socket
 import subprocess
 
 import psutil
+
+from utils.rate_limit import discovery_rate_limiter, client_key
 
 router = APIRouter(prefix="/network", tags=["Network"])
 
@@ -100,7 +102,9 @@ def get_network_status():
 
 
 @router.get("/discovery")
-def discover_local_network():
+def discover_local_network(request: Request):
+    discovery_rate_limiter.check(client_key(request, "discovery"))
+
     local_ip = get_local_private_ip()
 
     if not local_ip:

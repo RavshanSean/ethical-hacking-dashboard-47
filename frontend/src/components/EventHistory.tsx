@@ -1,6 +1,6 @@
 "use client";
 
-import { API_BASE_URL } from "@/config/api";
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 
 type SecurityEvent = {
@@ -19,7 +19,7 @@ export default function EventHistory() {
 
   async function loadEvents() {
     try {
-      const response = await fetch(`${API_BASE_URL}/events`);
+      const response = await apiFetch(`/events`);
 
       if (!response.ok) {
         throw new Error("Failed to load events");

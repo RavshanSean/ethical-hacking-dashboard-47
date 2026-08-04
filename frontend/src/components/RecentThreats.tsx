@@ -1,6 +1,6 @@
 "use client";
 
-import { API_BASE_URL } from "@/config/api";
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 
 type Threat = {
@@ -16,8 +16,7 @@ export default function RecentThreats() {
 
   async function loadThreats() {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/stats/recent-threats`
+      const response = await apiFetch(`/stats/recent-threats`
       );
 
       const data = await response.json();

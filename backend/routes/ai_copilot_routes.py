@@ -320,6 +320,17 @@ def dashboard_summary(context):
 
 @router.post("/ask")
 def ask_copilot(payload: CopilotRequest):
+    from utils.settings_service import get_app_settings
+
+    if not get_app_settings().get("ai_analysis", True):
+        return {
+            "answer": (
+                "AI analysis is disabled in Settings. "
+                "Enable “AI security summary” to use the copilot."
+            ),
+            "engine": "EHD AI Copilot V3",
+        }
+
     question = payload.question.lower()
     context = get_recent_context()
 

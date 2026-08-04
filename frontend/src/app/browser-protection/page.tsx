@@ -1,8 +1,8 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import { API_BASE_URL } from "@/config/api";
 import {
   AlertTriangle,
   Globe,
@@ -84,8 +84,7 @@ export default function BrowserProtectionPage() {
     setResult(null);
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/browser-protection/check`,
+      const response = await apiFetch(`/browser-protection/check`,
         {
           method: "POST",
           headers: {

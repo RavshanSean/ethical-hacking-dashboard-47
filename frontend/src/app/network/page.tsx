@@ -1,8 +1,8 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import { API_BASE_URL } from "@/config/api";
 import {
   Activity,
   Download,
@@ -72,7 +72,7 @@ export default function NetworkPage() {
 
   async function loadNetwork() {
     try {
-      const response = await fetch(`${API_BASE_URL}/network`);
+      const response = await apiFetch(`/network`);
 
       if (!response.ok) {
         throw new Error("Failed to load network data");
@@ -94,7 +94,7 @@ export default function NetworkPage() {
     setDiscovery(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/network/discovery`);
+      const response = await apiFetch(`/network/discovery`);
 
       if (!response.ok) {
         throw new Error("Network discovery failed");

@@ -101,18 +101,34 @@ def analyze_ip_reputation(ip: str):
 
     try:
         response = requests.get(
-            f"http://ip-api.com/json/{ip}?fields=status,message,country,regionName,city,isp,org,as,hosting,proxy,query",
+            f"https://ipapi.co/{ip}/json/",
             timeout=8,
+            headers={"User-Agent": "EHD47-ThreatIntel/1.0"},
         )
 
-        geo_data = response.json()
-
-        if geo_data.get("status") != "success":
-            reasons.append(
-                geo_data.get("message", "Public IP lookup failed.")
-            )
+        raw = response.json()
+        if raw.get("error"):
+            reasons.append(raw.get("reason") or "Public IP lookup failed.")
+            geo_data = {}
+        else:
+            geo_data = {
+                "status": "success",
+                "country": raw.get("country_name") or raw.get("country"),
+                "regionName": raw.get("region"),
+                "city": raw.get("city"),
+                "isp": raw.get("org"),
+                "org": raw.get("org"),
+                "as": raw.get("asn"),
+                "hosting": raw.get("asn") is not None and (
+                    "hosting" in str(raw.get("org") or "").lower()
+                    or "cloud" in str(raw.get("org") or "").lower()
+                ),
+                "proxy": False,
+                "query": ip,
+            }
     except Exception as error:
         reasons.append(f"Public IP lookup unavailable: {error}")
+        geo_data = {}
 
     isp = geo_data.get("isp")
     org = geo_data.get("org")
@@ -144,7 +160,11 @@ def analyze_ip_reputation(ip: str):
         risk_score += 25
         reasons.append("IP appears to be associated with proxy/VPN behavior.")
 
-    known_malicious = False
+    # Use local IOC database as confirmed malicious signal (no dead stub).
+    from ravshield_threatintel.ioc_database import check_ioc_record
+
+    ioc_hit = check_ioc_record("IP", ip)
+    known_malicious = bool(ioc_hit.get("matched"))
 
     if known_malicious:
         risk_score = 100

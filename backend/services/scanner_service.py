@@ -40,23 +40,39 @@ def get_ip_intelligence(ip: str):
         }
 
     try:
+        from utils.ssrf import is_blocked_ip
+
+        if is_blocked_ip(ip):
+            return {
+                "ip": ip,
+                "country": "Blocked",
+                "region": "Blocked",
+                "city": "Blocked",
+                "isp": "Private/blocked address",
+                "org": "Private/blocked address",
+                "asn": "Unknown",
+                "latitude": None,
+                "longitude": None,
+            }
+
         response = requests.get(
-            f"http://ip-api.com/json/{ip}",
+            f"https://ipapi.co/{ip}/json/",
             timeout=5,
+            headers={"User-Agent": "EHD47-SecurityScanner/1.0"},
         )
 
         data = response.json()
 
         return {
             "ip": ip,
-            "country": data.get("country") or "Unknown",
-            "region": data.get("regionName") or "Unknown",
+            "country": data.get("country_name") or data.get("country") or "Unknown",
+            "region": data.get("region") or "Unknown",
             "city": data.get("city") or "Unknown",
-            "isp": data.get("isp") or "Unknown",
+            "isp": data.get("org") or "Unknown",
             "org": data.get("org") or "Unknown",
-            "asn": data.get("as") or "Unknown",
-            "latitude": data.get("lat"),
-            "longitude": data.get("lon"),
+            "asn": data.get("asn") or "Unknown",
+            "latitude": data.get("latitude"),
+            "longitude": data.get("longitude"),
         }
 
     except Exception:
@@ -74,8 +90,12 @@ def get_ip_intelligence(ip: str):
 
 def get_redirect_chain(url: str):
     try:
+        from utils.ssrf import validate_scan_url
+
+        safe_url = validate_scan_url(url)
+
         response = requests.get(
-            url,
+            safe_url,
             timeout=10,
             allow_redirects=True,
             headers={
@@ -87,6 +107,11 @@ def get_redirect_chain(url: str):
             item.url for item in response.history
         ]
 
+        # Re-validate final destination (redirect-based SSRF).
+        validate_scan_url(response.url)
+        for hop in redirect_chain:
+            validate_scan_url(hop)
+
         return {
             "final_url": response.url,
             "redirect_chain": redirect_chain,
@@ -96,13 +121,18 @@ def get_redirect_chain(url: str):
         }
 
     except Exception as error:
+        from fastapi import HTTPException
+
+        if isinstance(error, HTTPException):
+            raise
+
         return {
             "final_url": url,
             "redirect_chain": [],
             "redirect_count": 0,
             "https_enabled": url.startswith("https://"),
             "status_code": None,
-            "error": str(error),
+            "error": str(getattr(error, "detail", error)),
         }
 
 
@@ -189,9 +219,11 @@ def get_ssl_intelligence(domain: str):
         }
 # Receives a URL from FastAPI
 def scan_website(input_url: str):
+    from utils.ssrf import validate_scan_url
+    from utils.settings_service import get_app_settings
 
-    # Clean and standardize URL
-    input_url = normalize_url(input_url)
+    # Clean, standardize, and SSRF-check URL
+    input_url = validate_scan_url(input_url)
 
     # Extract domain from URL
     domain = extract_domain(input_url)
@@ -238,6 +270,10 @@ def scan_website(input_url: str):
 
     # Open real browser with Playwright
     try:
+        from utils.ssrf import validate_scan_url
+
+        validate_scan_url(input_url)
+
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
@@ -341,14 +377,18 @@ def scan_website(input_url: str):
     else:
         threat_level = "LOW"
     
-    # Generate AI-powered security summary
-    ai_summary = generate_ai_summary({
-        "risk_score": risk_score,
-        "threat_level": threat_level,
-        "scripts_detected": scripts,
-        "login_forms_detected": login_forms,
-        "reasons": reasons,
-    })
+    # Generate AI-powered security summary when enabled
+    settings = get_app_settings()
+    if settings.get("ai_analysis", True):
+        ai_summary = generate_ai_summary({
+            "risk_score": risk_score,
+            "threat_level": threat_level,
+            "scripts_detected": scripts,
+            "login_forms_detected": login_forms,
+            "reasons": reasons,
+        })
+    else:
+        ai_summary = "AI analysis is disabled in settings."
     
 
     # Final JSON response sent to frontend
@@ -408,13 +448,15 @@ def scan_website(input_url: str):
             longitude=ip_intelligence.get("longitude"),
         )
         
-    if threat_level == "HIGH":
-
+    # Only auto-learn from confirmed IOC correlation matches,
+    # not from heuristic HIGH scores alone (avoids poisoning).
+    matched_iocs = threat_correlation.get("matched_iocs") or []
+    if matched_iocs:
         auto_learn_ioc(
             "DOMAIN",
             domain,
             "HIGH",
-            "Automatically learned from a HIGH risk URL scan.",
+            "Confirmed via ThreatIntel IOC correlation.",
         )
 
         if (
@@ -425,7 +467,7 @@ def scan_website(input_url: str):
                 "IP",
                 resolved_ip,
                 "HIGH",
-                "Automatically learned from a HIGH risk URL scan.",
+                "Confirmed via ThreatIntel IOC correlation.",
             )
     
     save_scan_result(scan_result)

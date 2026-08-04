@@ -1,7 +1,7 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
-import { API_BASE_URL } from "@/config/api";
 import {
   PieChart,
   Pie,
@@ -30,7 +30,7 @@ export default function ThreatChart() {
 
     try {
  
-      const response = await fetch(`${API_BASE_URL}/stats`)
+      const response = await apiFetch(`/stats`)
 
       const data = await response.json();
 

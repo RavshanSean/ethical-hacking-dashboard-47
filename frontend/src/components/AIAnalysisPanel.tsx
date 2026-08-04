@@ -1,9 +1,8 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { BrainCircuit, RefreshCw } from "lucide-react";
-import { API_BASE_URL } from "@/config/api";
-
 export default function AIAnalysisPanel() {
   const [summary, setSummary] = useState("");
   const [loading, setLoading] = useState(false);
@@ -12,7 +11,7 @@ export default function AIAnalysisPanel() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/ai-copilot/ask`, {
+      const response = await apiFetch(`/ai-copilot/ask`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

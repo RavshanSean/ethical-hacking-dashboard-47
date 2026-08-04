@@ -1,6 +1,6 @@
 "use client";
 
-import { API_BASE_URL } from "@/config/api";
+import { apiFetch } from "@/lib/api";
 import { useRef, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import {
@@ -58,7 +58,7 @@ export default function FileScannerPage() {
     formData.append("file", selectedFile);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/scan-file`, {
+      const response = await apiFetch(`/scan-file`, {
         method: "POST",
         body: formData,
       });

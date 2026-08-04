@@ -1,8 +1,8 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import { API_BASE_URL } from "@/config/api";
 import { Activity, Cpu, Database } from "lucide-react";
 
 type ProcessItem = {
@@ -26,7 +26,7 @@ export default function ProcessesPage() {
 
   async function loadProcesses() {
     try {
-      const response = await fetch(`${API_BASE_URL}/processes`);
+      const response = await apiFetch(`/processes`);
 
       if (!response.ok) {
         throw new Error("Failed to load processes");
