@@ -39,7 +39,8 @@ def is_blocked_ip(ip_str: str) -> bool:
     try:
         ip = ipaddress.ip_address(ip_str)
     except ValueError:
-        return True
+        # Not an IP literal. Callers validating hostnames should not use this alone.
+        return False
 
     if (
         ip.is_private
@@ -63,13 +64,13 @@ def _hostname_is_blocked(hostname: str) -> bool:
     if host.endswith(".localhost") or host.endswith(".local") or host.endswith(".internal"):
         return True
 
+    # Only treat the hostname as blocked here when it is an IP literal.
     try:
-        if is_blocked_ip(host):
-            return True
-    except Exception:
-        pass
+        ipaddress.ip_address(host)
+    except ValueError:
+        return False
 
-    return False
+    return is_blocked_ip(host)
 
 
 def resolve_and_validate_host(hostname: str) -> list[str]:
@@ -145,7 +146,15 @@ def validate_scan_url(url: str) -> str:
 
 def validate_public_ip(ip: str) -> str:
     value = (ip or "").strip()
-    if not value or is_blocked_ip(value):
+    try:
+        ipaddress.ip_address(value)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid IP address",
+        ) from exc
+
+    if is_blocked_ip(value):
         raise HTTPException(
             status_code=400,
             detail="IP lookup is limited to public addresses",

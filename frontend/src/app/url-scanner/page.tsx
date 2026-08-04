@@ -87,15 +87,24 @@ export default function UrlScannerPage() {
         body: JSON.stringify({ url: cleanUrl }),
       });
 
+      const data = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        throw new Error("Backend scan failed");
+        const detail =
+          typeof data?.detail === "string"
+            ? data.detail
+            : "Backend scan failed";
+        throw new Error(detail);
       }
 
-      const data = await response.json();
       setResult(data);
     } catch (error) {
       console.error("URL scan failed:", error);
-      setError("Scan failed. The site may be offline, invalid, or blocked.");
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Scan failed. The site may be offline, invalid, or blocked."
+      );
     } finally {
       setLoading(false);
     }
